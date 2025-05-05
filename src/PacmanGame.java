@@ -18,7 +18,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     private int boardWidth = columnCount * tileSize;
     private int boardHeight = rowCount * tileSize;
     Timer gameLoop;
-    
+
     App app;
 
     //Pacman Textures
@@ -118,7 +118,6 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             this.height = height; // Store height
         }
 
-       
     }
 
     public PacmanGame(App app) {
@@ -262,10 +261,10 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     private void drawBoard(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
-        
+
         g.setColor(new Color(253, 245, 185));
         for (Block food : foods) {
-            g.fillRect(food.x_position+14, food.y_position+14, 5, 5);
+            g.fillRect(food.x_position + 14, food.y_position + 14, 5, 5);
         }
 
         // Draw Pacman
@@ -283,21 +282,19 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         for (Block ghost : ghosts) {
             g2d.drawImage(ghost.texture, ghost.x_position, ghost.y_position, tileSize, tileSize, this);
         }
-        
-        
-        
+
         // Draw Score/Lives
         g2d.setFont(PixelFont);
         g2d.setColor(Color.WHITE);
-        g2d.drawString("Score: " + String.valueOf(score), boardWidth/2-60, boardHeight+32);
-        
-        g2d.drawString("Lives: ", 10, boardHeight+32);
+        g2d.drawString("Score: " + String.valueOf(score), boardWidth / 2 - 60, boardHeight + 32);
+
+        g2d.drawString("Lives: ", 10, boardHeight + 32);
         int hearts_gap = 60;
         for (int i = 0; i < 3; i++) {
             if (i < lives) {
-                g2d.drawImage(hearts, hearts_gap, boardHeight+13, (int)(23*1.5), (int) (17*1.5), this);
+                g2d.drawImage(hearts, hearts_gap, boardHeight + 13, (int) (23 * 1.5), (int) (17 * 1.5), this);
             } else {
-                g2d.drawImage(empty_hearts, hearts_gap, boardHeight+13, (int)(23*1.5), (int) (17*1.5), this);
+                g2d.drawImage(empty_hearts, hearts_gap, boardHeight + 13, (int) (23 * 1.5), (int) (17 * 1.5), this);
             }
             hearts_gap += 27;
         }
@@ -588,12 +585,12 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             System.err.println("Error checking map bounds: " + targetGridX + "," + targetGridY);
         }
     }
-    
+
     private void foodCollision(Direction direction) {
         // Calculate the potential next grid position
         int targetGridX = pacman.X_GridPosition;
         int targetGridY = pacman.Y_GridPosition;
-        
+
         Block foodEaten = null;
         for (Block food : foods) {
             if (collision(pacman, food)) {
@@ -602,13 +599,13 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             }
         }
         foods.remove(foodEaten);
-        
+
         // Move to next level
-        if (foods.isEmpty()){
+        if (foods.isEmpty()) {
             gameLoop.stop();
         }
     }
-    
+
     public boolean collision(Block a, Block b) {
         return a.x_position < b.x_position + b.width
                 && a.x_position + a.width > b.x_position
@@ -632,8 +629,14 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     }
     
+   
+
     // Game Over Mechanic
     private void gameOver() {
-        app.cardLayout.show(app.MainPanel, "instructions");
+        app.MainFrame.setSize(980, 780);
+        app.MainFrame.setLocationRelativeTo(null);
+         app.gameOverPanel.setScore(score);
+        app.cardLayout.show(app.MainPanel, "gameover");
+
     }
 }
