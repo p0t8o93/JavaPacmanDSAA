@@ -881,8 +881,11 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     // Game Over Mechanic
     private void gameOver() {
-        System.out.println("Game Over!");
-        gameLoop.stop(); // Stop the game loop firmly
+        gameLoop.stop();
+        app.MainFrame.setSize(980, 780);
+        app.MainFrame.setLocationRelativeTo(null);
+         app.gameOverPanel.setScore(score);
+        app.cardLayout.show(app.MainPanel, "gameover");
 
     }
 
@@ -891,3 +894,4 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         requestFocusInWindow();
     }
 }
+

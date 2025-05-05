@@ -60,18 +60,7 @@ public class FrontInterface extends JPanel {
         settingsButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Settings_Gear.gif")).getImage();
         trophyButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Trophy.gif")).getImage();
 
-        
-        
-        /*add(new JLabel("Front Interface"));
-        JButton instructions = new JButton("Instruction");
-        JButton play = new JButton("Play");
-
-        instructions.addActionListener(new DisplayInstructions());
-        play.addActionListener(new PlayGame());
-        add(instructions);
-        add(play);
-         */
-        
+     
         JLabel redGhost_lbl = new JLabel(new ImageIcon(redGhost));
         JLabel orangeGhost_lbl = new JLabel(new ImageIcon(orangeGhost));
         JLabel blueGhost_lbl = new JLabel(new ImageIcon(blueGhost));
@@ -86,35 +75,58 @@ public class FrontInterface extends JPanel {
         add(orangeGhost_lbl);
         add(blueGhost_lbl);
         add(pinkGhost_lbl);
-        
+
         // BUTTONS
-        JButton playButton = createImageButton("./assets/ui_graphics/New_Play.png", btnWidth, btnHeight);
+        JButton playButton = createHoverButton("./assets/ui_graphics/New_Play.png", "./assets/ui_graphics/Play_red.PNG", btnWidth, btnHeight);
         playButton.setBounds(btnX2, btnYStart2, btnWidth, btnHeight);
         playButton.addActionListener(new PlayGame());
         add(playButton);
-        
-        JButton helpButton = createImageButton("./assets/ui_graphics/Help.png", newWidth, 80);
+
+        JButton helpButton = createHoverButton("./assets/ui_graphics/Help.png", "./assets/ui_graphics/Help_red.PNG", newWidth, 80);
         helpButton.setBounds(newX, btnYStart + btnSpacing, newWidth, 80);
         helpButton.addActionListener(new DisplayInstructions());
         add(helpButton);
-        
-        JButton aboutButton = createImageButton("./assets/ui_graphics/About.png", newWidth, 80);
+
+        JButton aboutButton = createHoverButton("./assets/ui_graphics/About.png", "./assets/ui_graphics/About_red.PNG", newWidth, 80);
         aboutButton.setBounds(newX, btnYStart + btnSpacing * 2, newWidth, 80);
         aboutButton.addActionListener(new aboutUs());
         add(aboutButton);
-        
+
         JButton quitButton = createHoverButton("./assets/ui_graphics/Quit_Yellow.png", "/assets/ui_graphics/Quit_Red.png", newWidth, 80);
         quitButton.setBounds(newX, btnYStart + btnSpacing * 3, newWidth, 80);
+        quitButton.addActionListener(new QuitGame());
         add(quitButton);
-        
-        JButton settingsButton = createImageButton("./assets/ui_graphics/Settings_Gear.gif", 50, 50);
-        settingsButton.setBounds(getWidth() - 130, getHeight() - 70, 50, 50);
+
+        JButton settingsButton = createImageButton("./assets/ui_graphics/Settings_Gear.gif", newWidth, 100);
+        settingsButton.setBounds(newX+350, btnYStart + btnSpacing * 3, 50, 50);
         add(settingsButton);
-        
-        JButton trophysButton = createImageButton("./assets/ui_graphics/Trophy.gif", 50, 50);
-        trophysButton.setBounds(getWidth() - 70, getHeight() - 70, 50, 50);
+
+        JButton trophysButton = createImageButton("./assets/ui_graphics/Trophy.gif", 100, 100);
+        trophysButton.setBounds(newX+300, btnYStart + btnSpacing * 3, 50, 50);
+        trophysButton.addActionListener(new leaderboard());
         add(trophysButton);
-        
+
+    }
+
+    private class QuitGame implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            int response = JOptionPane.showConfirmDialog(null, "Are you sure you want to quit?", "Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (response == JOptionPane.YES_OPTION) {
+                System.exit(0);  // This will terminate the application
+            }
+        }
+    }
+
+    private class leaderboard implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            app.MainFrame.setSize(1080, 780);
+            app.MainFrame.setLocationRelativeTo(null);
+            app.cardLayout.show(app.MainPanel, "leaderboard");
+        }
     }
 
     private class DisplayInstructions implements ActionListener {
@@ -122,7 +134,7 @@ public class FrontInterface extends JPanel {
         @Override
         public void actionPerformed(ActionEvent e) {
             // Switch the JPanel of FrontInterface to Instructions
-            app.MainFrame.setSize(960, 540);
+            app.MainFrame.setSize(960, 580);
             app.MainFrame.setLocationRelativeTo(null);
             app.cardLayout.show(app.MainPanel, "instructions");
         }
@@ -135,6 +147,7 @@ public class FrontInterface extends JPanel {
     private int boardHeight = rowCount * tileSize;
 
     private class PlayGame implements ActionListener {
+
         @Override
         public void actionPerformed(ActionEvent e) {
             // Switch the JPanel of FrontInterface to Pacmangame
@@ -146,8 +159,9 @@ public class FrontInterface extends JPanel {
             Game.startGame();
         }
     }
-    
+
     private class aboutUs implements ActionListener {
+
         @Override
         public void actionPerformed(ActionEvent e) {
             // Switch the JPanel of FrontInterface to Pacmangame
@@ -161,12 +175,8 @@ public class FrontInterface extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
-        
-        g.drawImage(settingsButtonImg, getWidth() - 130, getHeight() - 70, 50, 50,this);
-        
-        g.drawImage(trophyButtonImg, getWidth() - 70, getHeight() - 70, 50, 50,this);
     }
-    
+
     private JButton createImageButton(String filePath, int width, int height) {
         JButton button = new JButton(new ImageIcon(new ImageIcon(getClass().getResource(filePath)).getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH)));
         button.setBorderPainted(false);
@@ -174,7 +184,7 @@ public class FrontInterface extends JPanel {
         button.setFocusPainted(false);
         return button;
     }
-    
+
     private JButton createHoverButton(String defaultPath, String hoverPath, int width, int height) {
         JButton button = createImageButton(defaultPath, width, height);
         button.addMouseListener(new MouseAdapter() {
@@ -182,7 +192,7 @@ public class FrontInterface extends JPanel {
             public void mouseEntered(MouseEvent e) {
                 button.setIcon(new ImageIcon(new ImageIcon(getClass().getResource(hoverPath)).getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH)));
             }
-            
+
             @Override
             public void mouseExited(MouseEvent e) {
                 button.setIcon(new ImageIcon(new ImageIcon(getClass().getResource(defaultPath)).getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH)));
@@ -190,10 +200,6 @@ public class FrontInterface extends JPanel {
         });
         return button;
     }
-    private class trophyButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            
-        }
-    }
+
+
 }
