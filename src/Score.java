@@ -42,23 +42,23 @@ public class Score extends JPanel {
 
     private Image backgroundGif;
     private App app; // Reference to the main menu
-    int BGgifWidth = 980;
-    int BGgifHeight = 780;
-    int pacmoeHeight = 150;
-    int pacmoeWidth = 150;
-    int gifWidth = 120;
-    int gifHeight = 120;
-    int gifStartX = 111;
-    int gifY = 150;
-    int gifSpacing = 120;
-    int foodY = gifY + 240;
-    int foodStartX = gifStartX;
-    int foodSpacing = 100;
-    int foodHeight = 450;
-    int foodWidth = 450;
+    int BGgifWidth = 624;
+    int BGgifHeight = 692;
+    int pacmoeHeight = 90;
+    int pacmoeWidth = 90;
+    int gifWidth = 100;
+    int gifHeight = 100;
+    int gifStartX = 0;
+    int gifY = 90;
+    int gifSpacing = 150;
+    int foodY = 450;
+    int foodStartX = 90;
+    int foodSpacing = 120;
+    int foodHeight = 80;
+    int foodWidth = 80;
 
     Image blueGhost, orangeGhost, pinkGhost, redGhost, pacMoe;
-    Image icecream, burger, fries, peach;
+    Image icecream, burger, fries, peach, continue_text, inputname, bar, scorec;
     private Font PixelFont;
 
     public Score(App mainMenu) {
@@ -68,7 +68,7 @@ public class Score extends JPanel {
         try {
             InputStream fontStream = getClass().getResourceAsStream("./assets/game_font/PixelGame.otf");
             if (fontStream != null) {
-                PixelFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(64f);
+                PixelFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(48f);
                 fontStream.close();
             } else {
                 System.err.println("Font file not found!");
@@ -82,7 +82,7 @@ public class Score extends JPanel {
         setupDatabase();
 
         // Load background and characters
-        backgroundGif = new ImageIcon(getClass().getResource("./assets/ui_graphics/score.gif")).getImage().getScaledInstance(BGgifWidth, BGgifHeight, Image.SCALE_SMOOTH);
+        backgroundGif = new ImageIcon(getClass().getResource("./assets/ui_graphics/GameOver.png")).getImage().getScaledInstance(BGgifWidth, BGgifHeight, Image.SCALE_SMOOTH);
         pacMoe = new ImageIcon(getClass().getResource("./assets/ui_graphics/pacmoeflip.gif")).getImage().getScaledInstance(pacmoeWidth, pacmoeHeight, Image.SCALE_DEFAULT);
         blueGhost = new ImageIcon(getClass().getResource("./assets/ui_graphics/blueGhost.gif")).getImage().getScaledInstance(gifWidth, gifHeight, Image.SCALE_DEFAULT);
         orangeGhost = new ImageIcon(getClass().getResource("./assets/ui_graphics/orangeGhost.gif")).getImage().getScaledInstance(gifWidth, gifHeight, Image.SCALE_DEFAULT);
@@ -91,7 +91,11 @@ public class Score extends JPanel {
         icecream = new ImageIcon(getClass().getResource("./assets/ui_graphics/icecream.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
         burger = new ImageIcon(getClass().getResource("./assets/ui_graphics/burger.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
         fries = new ImageIcon(getClass().getResource("./assets/ui_graphics/fries.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
-//        peach = new ImageIcon(getClass().getResource("./assets/ui_graphics/peach.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
+        peach = new ImageIcon(getClass().getResource("./assets/ui_graphics/peach.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
+        continue_text = new ImageIcon(getClass().getResource("./assets/ui_graphics/continue_textt.png")).getImage().getScaledInstance(570, 370, Image.SCALE_SMOOTH);
+        inputname = new ImageIcon(getClass().getResource("./assets/ui_graphics/inputname.png")).getImage().getScaledInstance(455, 165, Image.SCALE_SMOOTH);
+        bar = new ImageIcon(getClass().getResource("./assets/ui_graphics/bar.png")).getImage().getScaledInstance(365, 105, Image.SCALE_SMOOTH);
+        scorec = new ImageIcon(getClass().getResource("./assets/ui_graphics/score.png")).getImage().getScaledInstance(140, 50, Image.SCALE_SMOOTH);
 
         // Create labels
         JLabel pacMoe_lbl = new JLabel(new ImageIcon(pacMoe));
@@ -102,21 +106,28 @@ public class Score extends JPanel {
         JLabel icecream_lbl = new JLabel(new ImageIcon(icecream));
         JLabel burger_lbl = new JLabel(new ImageIcon(burger));
         JLabel fries_lbl = new JLabel(new ImageIcon(fries));
-//        JLabel peach_lbl = new JLabel(new ImageIcon(peach));
+        JLabel peach_lbl = new JLabel(new ImageIcon(peach));
+        JLabel Ctext_lbl = new JLabel(new ImageIcon(continue_text));
+        JLabel input_lbl = new JLabel(new ImageIcon(inputname));
+        JLabel bar_lbl = new JLabel(new ImageIcon(bar));
+        JLabel scorec_lbl = new JLabel(new ImageIcon(scorec));
 
         // Positioning for ghosts and Pac-Moe
         pacMoe_lbl.setBounds(gifStartX, gifY - 20, gifWidth * 2, gifHeight * 2);
-        redGhost_lbl.setBounds(gifStartX + gifSpacing * 2, gifY + 20, gifWidth, gifHeight);
-        orangeGhost_lbl.setBounds(gifStartX + gifSpacing * 3, gifY + 20, gifWidth, gifHeight);
-        blueGhost_lbl.setBounds(gifStartX + gifSpacing * 4, gifY + 20, gifWidth, gifHeight);
-        pinkGhost_lbl.setBounds(gifStartX + gifSpacing * 5, gifY + 20, gifWidth, gifHeight);
+        redGhost_lbl.setBounds(gifStartX + gifSpacing + 10, gifY + 20, gifWidth, gifHeight);
+        orangeGhost_lbl.setBounds(gifStartX + gifSpacing + 110, gifY + 20, gifWidth, gifHeight);
+        blueGhost_lbl.setBounds(gifStartX + gifSpacing + 210, gifY + 20, gifWidth, gifHeight);
+        pinkGhost_lbl.setBounds(gifStartX + gifSpacing + 310, gifY + 20, gifWidth, gifHeight);
 
         // Positioning for food items
         icecream_lbl.setBounds(foodStartX, foodY, foodWidth, foodHeight);
         burger_lbl.setBounds(foodStartX + foodSpacing, foodY, foodWidth, foodHeight);
         fries_lbl.setBounds(foodStartX + foodSpacing * 2, foodY, foodWidth, foodHeight);
-//        peach_lbl.setBounds(foodStartX + foodSpacing * 3, foodY, foodWidth, foodHeight);
-
+        peach_lbl.setBounds(foodStartX + foodSpacing * 3, foodY, foodWidth, foodHeight);
+        Ctext_lbl.setBounds(10, 380, 600, 50);
+        input_lbl.setBounds(10, 210, 600, 50);
+        bar_lbl.setBounds(160, 310, 300, 50);
+        scorec_lbl.setBounds(150, 530, 200, 50);
         // Add all labels
         add(pacMoe_lbl);
         add(redGhost_lbl);
@@ -126,12 +137,16 @@ public class Score extends JPanel {
         add(icecream_lbl);
         add(burger_lbl);
         add(fries_lbl);
-//        add(peach_lbl);
+        add(peach_lbl);
+        add(Ctext_lbl);
+        add(input_lbl);
+        add(bar_lbl);
+        add(scorec_lbl);
 
         scoreLabel = new JLabel();
         scoreLabel.setFont(PixelFont);
         scoreLabel.setForeground(Color.WHITE);
-        scoreLabel.setBounds(430, 690, 300, 60); // Position it on the panel
+        scoreLabel.setBounds(300, 530, 300, 60); // Position it on the panel
 
         nameInputField = new JTextField();
         nameInputField.setFont(PixelFont);
@@ -140,9 +155,9 @@ public class Score extends JPanel {
         nameInputField.setBorder(null);
         nameInputField.setForeground(Color.WHITE);  // White font
         nameInputField.setCaretColor(Color.WHITE);
-        nameInputField.setBounds(340, 375, 300, 50);  // Adjust position as needed
+        nameInputField.setBounds(150, 295, 300, 50);  // Adjust position as needed
         nameInputField.setHorizontalAlignment(JTextField.CENTER);
-      
+
         nameInputField.setDocument(new javax.swing.text.PlainDocument() {
             @Override
             public void insertString(int offset, String str, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
@@ -174,14 +189,14 @@ public class Score extends JPanel {
 
         add(scoreLabel);
         add(nameInputField);
-       this.addComponentListener(new ComponentAdapter() {
-    @Override
-    public void componentShown(ComponentEvent e) {
-        SwingUtilities.invokeLater(() -> {
-            nameInputField.requestFocusInWindow();
+        this.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    nameInputField.requestFocusInWindow();
+                });
+            }
         });
-    }
-});
     }
 
     @Override

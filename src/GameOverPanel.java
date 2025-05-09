@@ -8,23 +8,23 @@ public class GameOverPanel extends JPanel {
     private Image backgroundGif;
     private App app; // Reference to the main menu
     private int score;
-    int BGgifWidth = 980;
-    int BGgifHeight = 780;
-    int pacmoeHeight = 150;
-    int pacmoeWidth = 150;
-    int gifWidth = 120;
-    int gifHeight = 120;
-    int gifStartX = 111;
-    int gifY = 150;
-    int gifSpacing = 120;
-    int foodY = gifY + 120;
-    int foodStartX = gifStartX;
-    int foodSpacing = 100;
-    int foodHeight = 450;
-    int foodWidth = 450;
+    int BGgifWidth = 624;
+    int BGgifHeight = 692;
+    int pacmoeHeight = 90;
+    int pacmoeWidth = 90;
+    int gifWidth = 100;
+    int gifHeight = 100;
+    int gifStartX = 0;
+    int gifY = 90;
+    int gifSpacing = 150;
+    int foodY = 450;
+    int foodStartX = 90;
+    int foodSpacing = 120;
+    int foodHeight = 80;
+    int foodWidth = 80;
 
     Image blueGhost, orangeGhost, pinkGhost, redGhost, pacMoe;
-    Image icecream, burger, fries, peach;
+    Image icecream, burger, fries, peach, gameover_text,continue_text;
 
     public GameOverPanel(App mainMenu) {
         this.app = mainMenu;
@@ -40,7 +40,10 @@ public class GameOverPanel extends JPanel {
         icecream = new ImageIcon(getClass().getResource("./assets/ui_graphics/icecream.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
         burger = new ImageIcon(getClass().getResource("./assets/ui_graphics/burger.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
         fries = new ImageIcon(getClass().getResource("./assets/ui_graphics/fries.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
-//        peach = new ImageIcon(getClass().getResource("./assets/ui_graphics/peach.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
+        peach = new ImageIcon(getClass().getResource("./assets/ui_graphics/peach.gif")).getImage().getScaledInstance(foodWidth, foodHeight, Image.SCALE_DEFAULT);
+        gameover_text = new ImageIcon(getClass().getResource("./assets/ui_graphics/gameover_textt.png")).getImage().getScaledInstance(570, 370, Image.SCALE_SMOOTH);
+        continue_text = new ImageIcon(getClass().getResource("./assets/ui_graphics/continue_textt.png")).getImage().getScaledInstance(570, 370, Image.SCALE_SMOOTH);
+
 
         // Create labels
         JLabel pacMoe_lbl = new JLabel(new ImageIcon(pacMoe));
@@ -51,20 +54,27 @@ public class GameOverPanel extends JPanel {
         JLabel icecream_lbl = new JLabel(new ImageIcon(icecream));
         JLabel burger_lbl = new JLabel(new ImageIcon(burger));
         JLabel fries_lbl = new JLabel(new ImageIcon(fries));
-//        JLabel peach_lbl = new JLabel(new ImageIcon(peach));
+        JLabel peach_lbl = new JLabel(new ImageIcon(peach));
+        JLabel Gtext_lbl = new JLabel(new ImageIcon(gameover_text));
+        JLabel Ctext_lbl = new JLabel(new ImageIcon(continue_text));
+        
+        
 
         // Positioning for ghosts and Pac-Moe
         pacMoe_lbl.setBounds(gifStartX, gifY - 20, gifWidth * 2, gifHeight * 2);
-        redGhost_lbl.setBounds(gifStartX + gifSpacing * 2, gifY + 20, gifWidth, gifHeight);
-        orangeGhost_lbl.setBounds(gifStartX + gifSpacing * 3, gifY + 20, gifWidth, gifHeight);
-        blueGhost_lbl.setBounds(gifStartX + gifSpacing * 4, gifY + 20, gifWidth, gifHeight);
-        pinkGhost_lbl.setBounds(gifStartX + gifSpacing * 5, gifY + 20, gifWidth, gifHeight);
+        redGhost_lbl.setBounds(gifStartX + gifSpacing+10 , gifY + 20, gifWidth, gifHeight);
+        orangeGhost_lbl.setBounds(gifStartX + gifSpacing+110, gifY + 20, gifWidth, gifHeight);
+        blueGhost_lbl.setBounds(gifStartX + gifSpacing +210, gifY + 20, gifWidth, gifHeight);
+        pinkGhost_lbl.setBounds(gifStartX + gifSpacing +310, gifY + 20, gifWidth, gifHeight);
 
         // Positioning for food items
         icecream_lbl.setBounds(foodStartX, foodY, foodWidth, foodHeight);
         burger_lbl.setBounds(foodStartX + foodSpacing, foodY, foodWidth, foodHeight);
         fries_lbl.setBounds(foodStartX + foodSpacing * 2, foodY, foodWidth, foodHeight);
-//        peach_lbl.setBounds(foodStartX + foodSpacing * 3, foodY, foodWidth, foodHeight);
+        peach_lbl.setBounds(foodStartX + foodSpacing * 3, foodY, foodWidth, foodHeight);
+        
+        Gtext_lbl.setBounds(10,215,600,100);
+        Ctext_lbl.setBounds(10,380,600,50);
 
         // Add all labels
         add(pacMoe_lbl);
@@ -75,13 +85,15 @@ public class GameOverPanel extends JPanel {
         add(icecream_lbl);
         add(burger_lbl);
         add(fries_lbl);
-//        add(peach_lbl);
+        add(peach_lbl);
+        add(Gtext_lbl);
+        add(Ctext_lbl);
 
         getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ENTER"), "enterPressed");
         getActionMap().put("enterPressed", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                app.MainFrame.setSize(980, 780);
+                app.MainFrame.setSize(624, 692);
                 app.MainFrame.setLocationRelativeTo(null);
                 app.scorePanel.setScore(score); 
                 app.cardLayout.show(app.MainPanel, "score");
