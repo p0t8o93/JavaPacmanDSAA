@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Rectangle;
+import javax.swing.ImageIcon;
 
 public class Bomb {
     int x_position_pixel; // Pixel position
@@ -16,6 +18,9 @@ public class Bomb {
     enum BombState { PLACED, EXPLODING, DONE }
     BombState state = BombState.PLACED;
     long explosionStartTime;
+    
+    Image bombTexture;
+    Image explosionTexture;
 
     public Bomb(int gridX, int gridY, int tileSize, Color color) {
         this.X_GridPosition = gridX;
@@ -25,6 +30,9 @@ public class Bomb {
         this.y_position_pixel = gridY * tileSize;
         this.color = color; // Color for PLACED state (e.g., Yellow)
         this.placedTime = System.currentTimeMillis();
+        
+        this.bombTexture = new ImageIcon(getClass().getResource("./assets/game_textures/bomb/bomb.gif")).getImage();
+        this.explosionTexture = new ImageIcon(getClass().getResource("./assets/game_textures/bomb/explosion.png")).getImage();
     }
 
     public void update() {
@@ -44,8 +52,8 @@ public class Bomb {
 
     public void draw(Graphics2D g2d, PacmanGame game) { // PacmanGame needed for isWallAtGrid
         if (state == BombState.PLACED) {
-            g2d.setColor(this.color); // Use the stored color for placed bomb
-            g2d.fillRect(x_position_pixel, y_position_pixel, tileSize, tileSize);
+            
+            g2d.drawImage(bombTexture, x_position_pixel, y_position_pixel, tileSize, tileSize, game);
         } else if (state == BombState.EXPLODING) {
             g2d.setColor(Color.ORANGE); // Explosion color
 
@@ -59,7 +67,8 @@ public class Bomb {
                 // Check bounds and if the tile is not a wall
                 if (ex >= 0 && ex < game.columnCount && ey >= 0 && ey < game.rowCount) {
                     if (!game.isWallAtGrid(ex, ey)) {
-                        g2d.fillRect(ex * game.tileSize, ey * game.tileSize, game.tileSize, game.tileSize);
+                        //g2d.fillRect(ex * game.tileSize, ey * game.tileSize, game.tileSize, game.tileSize);
+                        g2d.drawImage(explosionTexture, ex * game.tileSize, ey * game.tileSize, game.tileSize, game.tileSize, game);
                     }
                 }
             }

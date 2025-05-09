@@ -30,10 +30,10 @@ public class GhostPowers {
         this.pacmanGame = pacmanGameInstance;
 
         // Store references to the canonical ghost textures from PacmanGame
-        this.blueGhostTextureRef = pacmanGameInstance.blueGhost; // Assuming blueGhostImg field in PacmanGame
-        this.redGhostTextureRef = pacmanGameInstance.redGhost;
-        this.pinkGhostTextureRef = pacmanGameInstance.pinkGhost;
-        this.orangeGhostTextureRef = pacmanGameInstance.orangeGhost;
+        this.blueGhostTextureRef = pacmanGameInstance.blueGhostLeft; // Assuming blueGhostImg field in PacmanGame
+        this.redGhostTextureRef = pacmanGameInstance.redGhostLeft;
+        this.pinkGhostTextureRef = pacmanGameInstance.pinkGhostLeft;
+        this.orangeGhostTextureRef = pacmanGameInstance.orangeGhostLeft;
 
         // Identify ghosts by comparing their *originalTexture* with the Image references
         // This assumes Block.originalTexture holds their standard appearance.

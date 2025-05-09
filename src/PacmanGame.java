@@ -12,7 +12,6 @@ import java.util.PriorityQueue;
 import java.util.Random;
 import javax.swing.*;
 
-
 public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     int rowCount = 21;
@@ -37,24 +36,48 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     Image pacmanDown;
 
     // Ghost Textures
-    Image blueGhost; // Renamed to avoid conflict with Block instance
-    Image redGhost;
-    Image pinkGhost;
-    Image orangeGhost;
+    Image blueGhostLeft; // Renamed to avoid conflict with Block instance
+    Image blueGhostRight;
+    Image blueGhostUp;
+    Image blueGhostDown;
+
+    Image redGhostLeft;
+    Image redGhostRight;
+    Image redGhostUp;
+    Image redGhostDown;
+
+    Image pinkGhostLeft;
+    Image pinkGhostRight;
+    Image pinkGhostUp;
+    Image pinkGhostDown;
+
+    Image orangeGhostLeft;
+    Image orangeGhostRight;
+    Image orangeGhostUp;
+    Image orangeGhostDown;
+
     Image ghostFrightenedTexture; // For blue vulnerable state
     Image ghostEatenTexture;      // For "eyes" returning state
+
+    Image blueGhost_FRIGHTENED;
+    Image redGhost_FRIGHTENED;
+    Image pinkGhost_FRIGHTENED;
+    Image orangeGhost_FRIGHTENED;
+    // If all frightened ghosts look the same, you only need one:
+    // Image commonFrightenedTexture;
+
+    // --- NEW: Specific Eaten (Eyes) Textures ---
+    Image blueGhost_EATEN;
+    Image redGhost_EATEN;
+    Image pinkGhost_EATEN;
+    Image orangeGhost_EATEN;
 
     GhostPowers ghostPowers;
 
     // Wall Textures
-    private Image wallSide;
-    private Image wallTopBottom;
-    private Image wallLDownLeft;
-    private Image wallLDownRight;
-    private Image wallLUpLeft;
-    private Image wallLUpRight;
-    private Image wallTUp;
-    private Image wallTDown;
+    private Image bldg9Wall;
+    private Image bldg5Wall;
+    private Image technocoreWall;
 
     int score = 0;
     int lives = 3;
@@ -89,20 +112,20 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     // Levels (keep as is)
     private String[] Level1 = {
         "XXXXXXXXXXXXXXXXXXX",
-        "X0     X   X     0X",
+        "X0     X 0 X     0X",
         "X XX X X X X X XX X",
         "X    X   X   X    X",
         "X XX XXX X XXX XX X",
         "X X      X      X X",
         "X X XX XXXXX XX X X",
-        "X               0 X",
+        "X   0          0  X",
         "X XX X XXrXX X XX X",
         "X    X XbpoX X    X",
         "X XX X XXXXX X XX X",
         "X  X X       X X  X",
         "XX X X XXXXX X X XX",
         "X  X     X     X  X",
-        "X XX XXX X XXX XX X",
+        "X XX0XXX X XXX0XX X",
         "X    X       X    X",
         "X X XX X X X XX X X",
         "X X    X P X    X X",
@@ -112,7 +135,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     private String[] Level2 = {
         "XXXXXXXXXXXXXXXXXXX",
-        "X0               0X",
+        "X                 X",
         "X X XX XXXXX XX X X",
         "X X  X   X   X  X X",
         "X XX X X X X X XX X",
@@ -130,33 +153,33 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X XX X X X X X XX X",
         "X X      X      X X",
         "X X XX XXXXX XX X X",
-        "X0               0X",
+        "X                 X",
         "XXXXXXXXXXXXXXXXXXX",};
 
     private String[] Level3 = {
         "XXXXXXXXXXXXXXXXXXX",
-        "X      X   X      X",
-        "X XX X X X X X XX X",
-        "X    X   X   X    X",
+        "X        X        X",
         "X XX XXX X XXX XX X",
-        "X X      X      X X",
-        "X X XX XXXXX XX X X",
+        "X XX XXX X XXX XX X",
         "X                 X",
-        "X XX X XXrXX X XX X",
-        "X    X XbpoX X    X",
         "X XX X XXXXX X XX X",
-        "X  X X       X X  X",
-        "XX X X XXXXX X X XX",
-        "O  X     X     X  O", // Assuming 'O' is a typo and meant to be food or empty space as it's not handled.
+        "X    X   X   X    X",
+        "XXXX XX  X  XX XXXX",
+        "---X X       X X---",
+        "---X   XXrXX   X---",
+        "---X X XbpoX X X---",
+        "---X X XXXXX X X---",
+        "---X X       X X---",
+        "---X   X X X   X---", // Assuming 'O' is a typo and meant to be food or empty space as it's not handled.
         // If 'O' is special, its handling should be added in loadLevel.
         // For now, it will be treated as an empty space.
-        "X XX XXX X XXX XX X",
-        "X    X       X    X",
-        "X X XX X X X XX X X",
-        "X X    X P X    X X",
-        "X XXXX XXXXX XXXX X",
-        "X                 X",
-        "XXXXXXXXXXXXXXXXXXX",};
+        "---X XXX X XXX X---",
+        "---X     P     X---",
+        "---X X XXXXX X X---",
+        "---X X   X   X X---",
+        "---XXXXX X XXXXX---",
+        "---X           X---",
+        "---XXXXXXXXXXXXX---",};
 
     final int GHOST_PEN_WAIT_DURATION = 2000;
 
@@ -200,26 +223,23 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         pacmanUp = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/UP.gif")).getImage();
         pacmanDown = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/DOWN.gif")).getImage();
 
-        redGhost = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/redGhost.gif")).getImage();
-        blueGhost = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/blueGhost.gif")).getImage();
-        pinkGhost = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/pinkGhost.gif")).getImage();
-        orangeGhost = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost.gif")).getImage();
+        redGhostLeft = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/redGhost.gif")).getImage();
+        blueGhostLeft = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/blueGhost.gif")).getImage();
+        pinkGhostLeft = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/pinkGhost/Ghost-Eithan_LEFT.gif")).getImage();
+        orangeGhostLeft = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost.gif")).getImage();
         ghostFrightenedTexture = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost_vulnerable.gif")).getImage();
         ghostEatenTexture = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/ghosteyes.png")).getImage();
+        
+        redGhost_FRIGHTENED = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/ghosteyes.png")).getImage();
 
-        wallSide = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_Sides.png")).getImage();
-        wallTopBottom = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_TopBottom.png")).getImage();
-        wallLDownLeft = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_LDownLeft.png")).getImage();
-        wallLDownRight = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_LDownRight.png")).getImage();
-        wallLUpLeft = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_LUpLeft.png")).getImage();
-        wallLUpRight = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_LUpRight.png")).getImage();
-        wallTUp = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_TUp.png")).getImage();
-        wallTDown = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_TDown.png")).getImage();
+        bldg9Wall = new ImageIcon(getClass().getResource("./assets/game_textures/walls/bldg9.png")).getImage();
+        bldg5Wall = new ImageIcon(getClass().getResource("./assets/game_textures/walls/bldg5.png")).getImage();
+        technocoreWall = new ImageIcon(getClass().getResource("./assets/game_textures/walls/technocore.png")).getImage();
 
         activeProjectiles = new ArrayList<>();
         activeBombs = new ArrayList<>();
 
-        loadLevel(Level1);
+        loadLevel(Level1, bldg9Wall);
         gameLoop = new Timer(32, this);
 
     }
@@ -272,7 +292,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         // ... (System.out.println messages)
     }
 
-    public void loadLevel(String[] mapData) {
+    public void loadLevel(String[] mapData, Image wallTexture) {
         walls = new HashSet<>();
         foods = new HashSet<>();
         ghosts = new HashSet<>();
@@ -287,51 +307,21 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                 char mapChar = row.charAt(c);
 
                 if (mapChar == 'X') {
-                    // ... (wall loading logic - unchanged) ...
-                    if (r == 0 && (r + 1 < rowCount && mapData[r + 1].charAt(c) != 'X')
-                            || r == rowCount - 1 && (r - 1 >= 0 && mapData[r - 1].charAt(c) != 'X')
-                            || (r > 0 && r < rowCount - 1 && (r - 1 >= 0 && mapData[r - 1].charAt(c) != 'X') && (r + 1 < rowCount && mapData[r + 1].charAt(c) != 'X'))) {
-                        Block wall = new Block(wallTopBottom, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else if (c == 0 && (c + 1 < columnCount && mapData[r].charAt(c + 1) != 'X')
-                            || c == columnCount - 1 && (c - 1 >= 0 && mapData[r].charAt(c - 1) != 'X')
-                            || (c > 0 && c < columnCount - 1 && (c - 1 >= 0 && mapData[r].charAt(c - 1) != 'X') && (c + 1 < columnCount && mapData[r].charAt(c + 1) != 'X'))) {
-                        Block wall = new Block(wallSide, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else if (c > 0 && c < columnCount - 1 && (r + 1 < rowCount && mapData[r].charAt(c - 1) == 'X' && mapData[r].charAt(c + 1) == 'X' && mapData[r + 1].charAt(c) == 'X')) {
-                        Block wall = new Block(wallTUp, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else if (c > 0 && c < columnCount - 1 && (r - 1 >= 0 && mapData[r].charAt(c - 1) == 'X' && mapData[r].charAt(c + 1) == 'X' && mapData[r - 1].charAt(c) == 'X')) {
-                        Block wall = new Block(wallTDown, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else if (c > 0 && r < rowCount - 1 && (r + 1 < rowCount && mapData[r].charAt(c - 1) == 'X' && mapData[r + 1].charAt(c) == 'X')) {
-                        Block wall = new Block(wallLDownLeft, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else if (c < columnCount - 1 && r < rowCount - 1 && (r + 1 < rowCount && mapData[r].charAt(c + 1) == 'X' && mapData[r + 1].charAt(c) == 'X')) {
-                        Block wall = new Block(wallLDownRight, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else if (c > 0 && (r - 1 >= 0 && mapData[r].charAt(c - 1) == 'X' && mapData[r - 1].charAt(c) == 'X')) {
-                        Block wall = new Block(wallLUpLeft, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else if (c < columnCount - 1 && (r - 1 >= 0 && mapData[r].charAt(c + 1) == 'X' && mapData[r - 1].charAt(c) == 'X')) {
-                        Block wall = new Block(wallLUpRight, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    } else {
-                        Block wall = new Block(null, c, r, tileSize, tileSize);
-                        walls.add(wall);
-                    }
+
+                    Block wall = new Block(wallTexture, c, r, tileSize, tileSize);
+                    walls.add(wall);
                 } else if (mapChar == 'P') {
                     pacman = new Block(pacmanRight, c, r, tileSize, tileSize);
                 } else if (mapChar == 'o') {
-                    Block ghost = new Block(orangeGhost, c, r, tileSize, tileSize);
+                    Block ghost = new Block(orangeGhostLeft, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
                 } else if (mapChar == 'p') {
-                    Block ghost = new Block(pinkGhost, c, r, tileSize, tileSize);
+                    Block ghost = new Block(pinkGhostLeft, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
                 } else if (mapChar == 'r') {
-                    Block ghost = new Block(redGhost, c, r, tileSize, tileSize);
+                    Block ghost = new Block(redGhostLeft, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
                     if (!redGhostSpawnSet) { // Set general ghost pen to red ghost's spawn
@@ -340,7 +330,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                         redGhostSpawnSet = true;
                     }
                 } else if (mapChar == 'b') {
-                    Block ghost = new Block(blueGhost, c, r, tileSize, tileSize);
+                    Block ghost = new Block(blueGhostLeft, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
                 } else if (mapChar == ' ') {
@@ -1054,16 +1044,18 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             switch (level) {
                 case 2:
                     nextMap = Level2;
+                    loadLevel(nextMap, bldg5Wall);
                     break;
                 case 3:
                     nextMap = Level3;
+                    loadLevel(nextMap, technocoreWall);
                     break;
                 default:
                     System.out.println("All levels completed or level not found!");
                     gameOver();
                     return;
             }
-            loadLevel(nextMap);
+
             startGame(); // This will reset positions, clear projectiles/bombs, re-init GhostPowers, and start loop
         } else {
             gameOver();
@@ -1112,7 +1104,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         if (gameLoop.isRunning()) {
             gameLoop.stop();
         }
-        loadLevel(Level1);
+        loadLevel(Level1, bldg9Wall);
         // startGame() will be called by App to show menu first.
     }
 
