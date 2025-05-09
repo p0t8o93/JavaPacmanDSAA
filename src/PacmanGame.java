@@ -84,7 +84,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     int move_speed = 5; // Pacman's speed
     int ghost_move_speed = 3; // Normal ghost speed
     int ghost_frightened_speed = 2; // Slower speed when frightened
-    int ghost_eaten_speed = 6; // Faster speed when returning as eyes
+    int ghost_eaten_speed = 9; // Faster speed when returning as eyes
     Random random = new Random();
 
     HashSet<Block> walls;
@@ -227,10 +227,16 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         blueGhostLeft = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/blueGhost.gif")).getImage();
         pinkGhostLeft = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/pinkGhost/Ghost-Eithan_LEFT.gif")).getImage();
         orangeGhostLeft = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost.gif")).getImage();
-        ghostFrightenedTexture = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost_vulnerable.gif")).getImage();
-        ghostEatenTexture = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/ghosteyes.png")).getImage();
-        
-        redGhost_FRIGHTENED = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/ghosteyes.png")).getImage();
+
+        redGhost_FRIGHTENED = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/redGhost_vulnerable.GIF")).getImage();
+        blueGhost_FRIGHTENED = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/blueGhost_vulnerable.GIF")).getImage();
+        pinkGhost_FRIGHTENED = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/pinkGhost_vulnerable.GIF")).getImage();
+        orangeGhost_FRIGHTENED = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost_vulnerable.GIF")).getImage();
+
+        redGhost_EATEN = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/redGhost_EATEN.gif")).getImage();
+        blueGhost_EATEN = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/blueGhost_EATEN.png")).getImage();
+        pinkGhost_EATEN = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/pinkGhost_EATEN.gif")).getImage();
+        orangeGhost_EATEN = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost_EATEN.gif")).getImage();
 
         bldg9Wall = new ImageIcon(getClass().getResource("./assets/game_textures/walls/bldg9.png")).getImage();
         bldg5Wall = new ImageIcon(getClass().getResource("./assets/game_textures/walls/bldg5.png")).getImage();
@@ -897,17 +903,36 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     }
 
     private void eatGhost(Block ghost) {
-        if (!ghost.isFrightened || ghost.isEaten) {
-            return; // Can only eat frightened, not-yet-eaten ghosts
+        if (!ghost.isFrightened || ghost.isEaten || ghost.isInPenWaiting) {
+            return;
         }
-        score += (100 * eatenGhostScoreMultiplier); // 200, 400, 800, 1600
-        eatenGhostScoreMultiplier *= 2;
-        System.out.println("Ate ghost! Score: " + score);
 
+        score += (200 * eatenGhostScoreMultiplier); // Adjusted base score
+        eatenGhostScoreMultiplier *= 2;
+        if (eatenGhostScoreMultiplier > 8) {
+            eatenGhostScoreMultiplier = 8; // Max 1600
+        }
         ghost.isFrightened = false;
-        ghost.isEaten = true;
-        ghost.texture = ghostEatenTexture;
-        // The ghost will now pathfind back to its pen (handled in attemptToStartGhostMove)
+        ghost.isEaten = true; // Now means "returning to pen"
+        ghost.isInPenWaiting = false;
+
+        // Determine which specific eaten texture to use
+        if (ghost.originalTexture == redGhostLeft) {
+            ghost.texture = redGhost_EATEN;
+        } else if (ghost.originalTexture == blueGhostLeft) {
+            ghost.texture = blueGhost_EATEN;
+        } else if (ghost.originalTexture == pinkGhostLeft) {
+            ghost.texture = pinkGhost_EATEN;
+        } else if (ghost.originalTexture == orangeGhostLeft) {
+            ghost.texture = orangeGhost_EATEN;
+        } else {
+            // Fallback to a common eaten texture
+            ghost.texture = this.ghostEatenTexture; // Your existing common one
+        }
+        // If you only have one common eaten texture, this simplifies to:
+        // ghost.texture = commonEatenTexture; // (or this.ghostEatenTexture)
+
+        ghost.isMoving = false; // Force re-evaluation of path to pen
     }
 
     private void handlePlayerCaught() {
@@ -985,13 +1010,32 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     private void setGhostFrightened(Block ghost) {
         ghost.isFrightened = true;
-        ghost.isEaten = false; // Ensure not marked as eaten
-        // ghost.originalTexture is already set at Block creation or when returning to normal
-        ghost.texture = ghostFrightenedTexture;
-        // Reverse ghost direction when first frightened
-        ghost.currentDirection = getOpposite(ghost.currentDirection);
-        // If it was stationary, it will pick a new random direction in attemptToStartGhostMove
-        ghost.isMoving = false; // Force re-evaluation of move
+        ghost.isEaten = false;
+        ghost.isInPenWaiting = false;
+
+        // Determine which specific frightened texture to use
+        if (ghost.originalTexture == redGhostLeft) {
+            ghost.texture = redGhost_FRIGHTENED;
+        } else if (ghost.originalTexture == blueGhostLeft) {
+            ghost.texture = blueGhost_FRIGHTENED;
+        } else if (ghost.originalTexture == pinkGhostLeft) {
+            ghost.texture = pinkGhost_FRIGHTENED;
+        } else if (ghost.originalTexture == orangeGhostLeft) {
+            ghost.texture = orangeGhost_FRIGHTENED;
+        } else {
+            // Fallback to a common frightened texture if specific one not found or not defined
+            ghost.texture = this.ghostFrightenedTexture; // Your existing common one
+        }
+        // If you only have one common frightened texture, this simplifies to:
+        // ghost.texture = commonFrightenedTexture; // (or this.ghostFrightenedTexture)
+
+        if (ghost.currentDirection != Direction.NONE) {
+            Direction newDir = getOpposite(ghost.currentDirection);
+            if (canMove(ghost, newDir)) {
+                ghost.currentDirection = newDir;
+            }
+        }
+        ghost.isMoving = false;
     }
 
     private void deactivateEnergizer() {
