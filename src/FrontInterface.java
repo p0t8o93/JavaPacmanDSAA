@@ -57,24 +57,29 @@ public class FrontInterface extends JPanel {
         playButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/New_Play.png")).getImage().getScaledInstance(btnWidth, btnHeight, Image.SCALE_SMOOTH);
         helpButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Help.png")).getImage().getScaledInstance(newWidth, 80, Image.SCALE_SMOOTH);
         aboutButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/About.png")).getImage().getScaledInstance(newWidth, 80, Image.SCALE_SMOOTH);
-        settingsButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Settings_Gear.gif")).getImage();
-        trophyButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Trophy.gif")).getImage();
+        settingsButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Settings_Gear.gif")).getImage().getScaledInstance(gifWidth-30, gifHeight-30, Image.SCALE_DEFAULT);
+        trophyButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Trophy.gif")).getImage().getScaledInstance(gifWidth*2+200, gifHeight*2+40, Image.SCALE_DEFAULT);
 
-     
         JLabel redGhost_lbl = new JLabel(new ImageIcon(redGhost));
         JLabel orangeGhost_lbl = new JLabel(new ImageIcon(orangeGhost));
         JLabel blueGhost_lbl = new JLabel(new ImageIcon(blueGhost));
         JLabel pinkGhost_lbl = new JLabel(new ImageIcon(pinkGhost));
+        JLabel trophy_lbl = new JLabel(new ImageIcon(trophyButtonImg));
+        JLabel settings_lbl = new JLabel(new ImageIcon(settingsButtonImg));
 
         redGhost_lbl.setBounds(gifStartX, gifY, gifWidth, gifHeight);
         orangeGhost_lbl.setBounds(gifStartX + gifSpacing, gifY, gifWidth, gifHeight);
         blueGhost_lbl.setBounds(gifStartX + gifSpacing * 2, gifY, gifWidth, gifHeight);
         pinkGhost_lbl.setBounds(gifStartX + gifSpacing * 3, gifY, gifWidth, gifHeight);
+        trophy_lbl.setBounds(newX + 300, btnYStart + btnSpacing * 3, 50, 50);
+        settings_lbl.setBounds(newX + 350, btnYStart + btnSpacing * 3, 50, 50);
 
         add(redGhost_lbl);
         add(orangeGhost_lbl);
         add(blueGhost_lbl);
         add(pinkGhost_lbl);
+        add(trophy_lbl);
+        add(settings_lbl);
 
         // BUTTONS
         JButton playButton = createHoverButton("./assets/ui_graphics/New_Play.png", "./assets/ui_graphics/Play_red.PNG", btnWidth, btnHeight);
@@ -97,12 +102,18 @@ public class FrontInterface extends JPanel {
         quitButton.addActionListener(new QuitGame());
         add(quitButton);
 
-        JButton settingsButton = createImageButton("./assets/ui_graphics/Settings_Gear.gif", newWidth, 100);
-        settingsButton.setBounds(newX+350, btnYStart + btnSpacing * 3, 50, 50);
+        JButton settingsButton = new JButton();
+        settingsButton.setBorderPainted(false);
+        settingsButton.setContentAreaFilled(false);
+        settingsButton.setFocusPainted(false);
+        settingsButton.setBounds(newX + 350, btnYStart + btnSpacing * 3, 50, 50);
         add(settingsButton);
 
-        JButton trophysButton = createImageButton("./assets/ui_graphics/trophy.png", 100, 100);
-        trophysButton.setBounds(newX+300, btnYStart + btnSpacing * 3, 50, 50);
+        JButton trophysButton = new JButton();
+        trophysButton.setBorderPainted(false);
+        trophysButton.setContentAreaFilled(false);
+        trophysButton.setFocusPainted(false);
+        trophysButton.setBounds(newX + 300, btnYStart + btnSpacing * 3, 50, 50);
         trophysButton.addActionListener(new leaderboard());
         add(trophysButton);
 
@@ -200,6 +211,5 @@ public class FrontInterface extends JPanel {
         });
         return button;
     }
-
 
 }

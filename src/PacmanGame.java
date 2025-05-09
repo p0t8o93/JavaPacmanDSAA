@@ -1122,7 +1122,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             gameLoop.stop();
         }
         deactivateEnergizer();
-        app.MainFrame.setSize(980, 780);
+        app.MainFrame.setSize(624, 692);
         app.MainFrame.setLocationRelativeTo(null);
         app.gameOverPanel.setScore(score);
         app.cardLayout.show(app.MainPanel, "gameover");
