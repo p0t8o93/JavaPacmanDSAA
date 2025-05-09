@@ -1,3 +1,4 @@
+// PacmanGame.java
 
 import java.awt.*;
 import java.awt.event.*;
@@ -5,43 +6,47 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList; // Import ArrayList
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List; // Import List
+import java.util.PriorityQueue;
 import java.util.Random;
 import javax.swing.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 
 public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
-    // ... (Keep existing variables: rowCount, columnCount, etc.) ...
-    private int rowCount = 21;
-    private int columnCount = 19;
-    private int tileSize = 32;
+    int rowCount = 21;
+    int columnCount = 19;
+    int tileSize = 32;
     private int boardWidth = columnCount * tileSize;
     private int boardHeight = rowCount * tileSize;
     Timer gameLoop;
 
     int level = 1;
-
     App app;
 
-    //Pacman Textures
+    public List<Projectile> activeProjectiles;
+    public List<Bomb> activeBombs;
+
+    // Pacman Textures
     Image hearts;
     Image empty_hearts;
-    Image pacmanRight; // Consider adding Left, Up, Down later
+    Image pacmanRight;
     Image pacmanLeft;
     Image pacmanUp;
     Image pacmanDown;
 
-    Image blueGhost;
+    // Ghost Textures
+    Image blueGhost; // Renamed to avoid conflict with Block instance
     Image redGhost;
     Image pinkGhost;
     Image orangeGhost;
+    Image ghostFrightenedTexture; // For blue vulnerable state
+    Image ghostEatenTexture;      // For "eyes" returning state
 
-    Font pixelFont;
     GhostPowers ghostPowers;
 
+    // Wall Textures
     private Image wallSide;
     private Image wallTopBottom;
     private Image wallLDownLeft;
@@ -53,27 +58,44 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     int score = 0;
     int lives = 3;
-    int move_speed = 4;
-    int ghost_move_speed = 2; // Give ghosts a slightly different speed if desired
+    int move_speed = 5; // Pacman's speed
+    int ghost_move_speed = 3; // Normal ghost speed
+    int ghost_frightened_speed = 2; // Slower speed when frightened
+    int ghost_eaten_speed = 6; // Faster speed when returning as eyes
     Random random = new Random();
 
     HashSet<Block> walls;
     HashSet<Block> foods;
     public HashSet<Block> ghosts;
+    HashSet<Block> powerPellets; // New set for power pellets
     Block pacman;
 
-    private Font PixelFont; // Renamed to follow convention
+    private Font PixelFont;
+
+    // Energizer state
+    boolean energizerActive = false;
+    Timer energizerTimer;
+    final int GHOST_ENERGIZED_DURATION = 7000; // 7 seconds in milliseconds
+    int eatenGhostScoreMultiplier = 1; // For 200, 400, 800, 1600 points
+
+    // Ghost spawn/pen location (approximate center, adjust as needed for your map)
+    // This is where eaten ghosts should return.
+    // For simplicity, let's use the red ghost's initial spawn from Level 1 as a general pen.
+    // Ideally, each ghost might have its own specific "home" tile inside the ghost house.
+    // For Level1, 'r' is at (10, 8) if we find it.
+    int ghostPenGridX = 10; // Default, will be updated if 'r' is found
+    int ghostPenGridY = 8;
 
     // Levels (keep as is)
     private String[] Level1 = {
         "XXXXXXXXXXXXXXXXXXX",
-        "X      X   X      X",
+        "X0     X   X     0X",
         "X XX X X X X X XX X",
         "X    X   X   X    X",
         "X XX XXX X XXX XX X",
         "X X      X      X X",
         "X X XX XXXXX XX X X",
-        "X                 X",
+        "X               0 X",
         "X XX X XXrXX X XX X",
         "X    X XbpoX X    X",
         "X XX X XXXXX X XX X",
@@ -82,15 +104,15 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X  X     X     X  X",
         "X XX XXX X XXX XX X",
         "X    X       X    X",
-        "X X XX X-X X XX X X",
+        "X X XX X X X XX X X",
         "X X    X P X    X X",
         "X XXXX XXXXX XXXX X",
-        "X                 X",
+        "X0               0X",
         "XXXXXXXXXXXXXXXXXXX",};
 
     private String[] Level2 = {
         "XXXXXXXXXXXXXXXXXXX",
-        "X                 X",
+        "X0               0X",
         "X X XX XXXXX XX X X",
         "X X  X   X   X  X X",
         "X XX X X X X X XX X",
@@ -102,13 +124,13 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X X XX XXXXX XX X X",
         "X X             X X",
         "X XX X XXXXX X XX X",
-        "X X  X  -X   X  X X",
+        "X X  X   X   X  X X",
         "X X XX X X X XX X X",
         "X    X X P X X    X",
         "X XX X X X X X XX X",
         "X X      X      X X",
         "X X XX XXXXX XX X X",
-        "X                 X",
+        "X0               0X",
         "XXXXXXXXXXXXXXXXXXX",};
 
     private String[] Level3 = {
@@ -125,7 +147,9 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X XX X XXXXX X XX X",
         "X  X X       X X  X",
         "XX X X XXXXX X X XX",
-        "O  X     X     X  O",
+        "O  X     X     X  O", // Assuming 'O' is a typo and meant to be food or empty space as it's not handled.
+        // If 'O' is special, its handling should be added in loadLevel.
+        // For now, it will be treated as an empty space.
         "X XX XXX X XXX XX X",
         "X    X       X    X",
         "X X XX X X X XX X X",
@@ -134,18 +158,27 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X                 X",
         "XXXXXXXXXXXXXXXXXXX",};
 
-    // The Block inner class represents the walls, ghosts, portals, and pacman
-    
+    final int GHOST_PEN_WAIT_DURATION = 2000;
 
     public PacmanGame(App app) {
+        activeProjectiles = new ArrayList<>();
+        activeBombs = new ArrayList<>();
+        powerPellets = new HashSet<>(); // Initialize powerPellets
+
+        energizerTimer = new Timer(GHOST_ENERGIZED_DURATION, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deactivateEnergizer();
+            }
+        });
+        energizerTimer.setRepeats(false);
+
         this.app = app;
         setPreferredSize(new Dimension(boardWidth, boardHeight));
         addKeyListener(this);
         setFocusable(true);
         setBackground(Color.BLACK);
 
-        // Font Loading (keep as is)
-        // ... (font loading code) ...
         try {
             InputStream fontStream = getClass().getResourceAsStream("./assets/game_font/PixelGame.otf");
             if (fontStream != null) {
@@ -160,8 +193,6 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             PixelFont = new Font("SansSerif", Font.PLAIN, 12);
         }
 
-        // Image Loading (keep as is)
-        // ... (image loading code) ...
         hearts = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/heart.gif")).getImage();
         empty_hearts = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/empty_heart.gif")).getImage();
         pacmanRight = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/RIGHT.gif")).getImage();
@@ -173,6 +204,8 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         blueGhost = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/blueGhost.gif")).getImage();
         pinkGhost = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/pinkGhost.gif")).getImage();
         orangeGhost = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost.gif")).getImage();
+        ghostFrightenedTexture = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/orangeGhost_vulnerable.gif")).getImage();
+        ghostEatenTexture = new ImageIcon(getClass().getResource("./assets/game_textures/ghosts/ghosteyes.png")).getImage();
 
         wallSide = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_Sides.png")).getImage();
         wallTopBottom = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_TopBottom.png")).getImage();
@@ -183,69 +216,115 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         wallTUp = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_TUp.png")).getImage();
         wallTDown = new ImageIcon(getClass().getResource("./assets/game_textures/walls/Wall_TDown.png")).getImage();
 
-        loadLevel(Level1); // Load the map and create blocks
-        gameLoop = new Timer(16, this); // ~60 FPS
+        activeProjectiles = new ArrayList<>();
+        activeBombs = new ArrayList<>();
 
+        loadLevel(Level1);
+        gameLoop = new Timer(32, this);
+
+    }
+
+    private Image createSolidColorImage(int width, int height, Color color) {
+        Image img = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = (Graphics2D) img.getGraphics();
+        g2d.setColor(color);
+        g2d.fillRect(0, 0, width, height);
+        g2d.dispose();
+        return img;
+    }
+
+    private Image createGhostEyesImage(int width, int height, Color eyeColor, Color bgColor) {
+        Image img = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = (Graphics2D) img.getGraphics();
+        if (bgColor != null) { // Transparent if bgColor is null
+            g2d.setColor(bgColor);
+            g2d.fillRect(0, 0, width, height);
+        }
+
+        g2d.setColor(eyeColor);
+        // Simple rectangular eyes
+        int eyeWidth = width / 4;
+        int eyeHeight = height / 3;
+        int eyeSpacing = width / 12;
+        int eyeY = height / 3;
+
+        g2d.fillRect(width / 2 - eyeWidth - eyeSpacing / 2, eyeY, eyeWidth, eyeHeight);
+        g2d.fillRect(width / 2 + eyeSpacing / 2, eyeY, eyeWidth, eyeHeight);
+
+        g2d.dispose();
+        return img;
     }
 
     public void startGame() {
-        resetGamePositions(); // Ensure things start correctly
+        resetGamePositions();
+        activeProjectiles.clear();
+        activeBombs.clear();
+        deactivateEnergizer(); // Ensure energizer is off at the start
+        if (ghostPowers != null) { // If GhostPowers uses threads, ensure they are managed
+            // ghostPowers.stopAbilities(); // You'd need to implement this in GhostPowers
+        }
+        if (this.ghostPowers != null) {
+            System.out.println("Stopping existing GhostPowers threads...");
+            this.ghostPowers.stopAllAbilityThreads(); // <<<< ADD THIS CALL
+        }
+        this.ghostPowers = new GhostPowers(this);
         gameLoop.start();
+        // ... (System.out.println messages)
     }
 
-    // Renamed for clarity, selects level array
     public void loadLevel(String[] mapData) {
         walls = new HashSet<>();
         foods = new HashSet<>();
         ghosts = new HashSet<>();
-        pacman = null; // Reset pacman before loading
-        
+        powerPellets = new HashSet<>(); // Clear and re-initialize for new level
+        pacman = null;
+
+        boolean redGhostSpawnSet = false;
+
         for (int r = 0; r < rowCount; r++) {
             String row = mapData[r];
             for (int c = 0; c < columnCount; c++) {
                 char mapChar = row.charAt(c);
 
                 if (mapChar == 'X') {
-                    // Simplified wall creation for now, add textures back if needed
-                    // Pass grid coordinates to constructor
-                    //Block wall = new Block(null, c, r, tileSize, tileSize);
-                    //walls.add(wall);
-
-                    if (r == 0 && mapData[r + 1].charAt(c) != 'X' || r == rowCount - 1 && mapData[r - 1].charAt(c) != 'X'
-                            || r > 0 && r < rowCount - 1 && mapData[r - 1].charAt(c) != 'X' && mapData[r + 1].charAt(c) != 'X') {
+                    // ... (wall loading logic - unchanged) ...
+                    if (r == 0 && (r + 1 < rowCount && mapData[r + 1].charAt(c) != 'X')
+                            || r == rowCount - 1 && (r - 1 >= 0 && mapData[r - 1].charAt(c) != 'X')
+                            || (r > 0 && r < rowCount - 1 && (r - 1 >= 0 && mapData[r - 1].charAt(c) != 'X') && (r + 1 < rowCount && mapData[r + 1].charAt(c) != 'X'))) {
                         Block wall = new Block(wallTopBottom, c, r, tileSize, tileSize);
                         walls.add(wall);
-                    } else if (c == 0 && mapData[r].charAt(c + 1) != 'X' || c == columnCount - 1 && mapData[r].charAt(c - 1) != 'X'
-                            || c > 0 && c < columnCount - 1 && mapData[r].charAt(c + 1) != 'X' && mapData[r].charAt(c - 1) != 'X') {
+                    } else if (c == 0 && (c + 1 < columnCount && mapData[r].charAt(c + 1) != 'X')
+                            || c == columnCount - 1 && (c - 1 >= 0 && mapData[r].charAt(c - 1) != 'X')
+                            || (c > 0 && c < columnCount - 1 && (c - 1 >= 0 && mapData[r].charAt(c - 1) != 'X') && (c + 1 < columnCount && mapData[r].charAt(c + 1) != 'X'))) {
                         Block wall = new Block(wallSide, c, r, tileSize, tileSize);
                         walls.add(wall);
-                    } else if (c > 0 && c < columnCount - 1 && mapData[r].charAt(c - 1) == 'X' && mapData[r].charAt(c + 1) == 'X' && mapData[r + 1].charAt(c) == 'X') {
+                    } else if (c > 0 && c < columnCount - 1 && (r + 1 < rowCount && mapData[r].charAt(c - 1) == 'X' && mapData[r].charAt(c + 1) == 'X' && mapData[r + 1].charAt(c) == 'X')) {
                         Block wall = new Block(wallTUp, c, r, tileSize, tileSize);
                         walls.add(wall);
-                    } else if (c > 0 && c < columnCount - 1 && mapData[r].charAt(c - 1) == 'X' && mapData[r].charAt(c + 1) == 'X' && mapData[r - 1].charAt(c) == 'X') {
+                    } else if (c > 0 && c < columnCount - 1 && (r - 1 >= 0 && mapData[r].charAt(c - 1) == 'X' && mapData[r].charAt(c + 1) == 'X' && mapData[r - 1].charAt(c) == 'X')) {
                         Block wall = new Block(wallTDown, c, r, tileSize, tileSize);
                         walls.add(wall);
-                    } else if (c > 0 && r < rowCount - 1 && mapData[r].charAt(c - 1) == 'X' && mapData[r + 1].charAt(c) == 'X') {
+                    } else if (c > 0 && r < rowCount - 1 && (r + 1 < rowCount && mapData[r].charAt(c - 1) == 'X' && mapData[r + 1].charAt(c) == 'X')) {
                         Block wall = new Block(wallLDownLeft, c, r, tileSize, tileSize);
                         walls.add(wall);
-                    } else if (c < columnCount - 1 && r < rowCount - 1 && mapData[r].charAt(c + 1) == 'X' && mapData[r + 1].charAt(c) == 'X') {
+                    } else if (c < columnCount - 1 && r < rowCount - 1 && (r + 1 < rowCount && mapData[r].charAt(c + 1) == 'X' && mapData[r + 1].charAt(c) == 'X')) {
                         Block wall = new Block(wallLDownRight, c, r, tileSize, tileSize);
                         walls.add(wall);
-                    } else if (c > 0 && mapData[r].charAt(c - 1) == 'X' && mapData[r - 1].charAt(c) == 'X') {
+                    } else if (c > 0 && (r - 1 >= 0 && mapData[r].charAt(c - 1) == 'X' && mapData[r - 1].charAt(c) == 'X')) {
                         Block wall = new Block(wallLUpLeft, c, r, tileSize, tileSize);
                         walls.add(wall);
-                    } else if (c < columnCount - 1 && mapData[r].charAt(c + 1) == 'X' && mapData[r - 1].charAt(c) == 'X') {
+                    } else if (c < columnCount - 1 && (r - 1 >= 0 && mapData[r].charAt(c + 1) == 'X' && mapData[r - 1].charAt(c) == 'X')) {
                         Block wall = new Block(wallLUpRight, c, r, tileSize, tileSize);
                         walls.add(wall);
                     } else {
-                        Block wall = new Block(null, c, r, tileSize, tileSize); // Default/Inner wall
+                        Block wall = new Block(null, c, r, tileSize, tileSize);
                         walls.add(wall);
                     }
                 } else if (mapChar == 'P') {
                     pacman = new Block(pacmanRight, c, r, tileSize, tileSize);
                 } else if (mapChar == 'o') {
                     Block ghost = new Block(orangeGhost, c, r, tileSize, tileSize);
-                    ghost.isGhost = true; // Mark as ghost
+                    ghost.isGhost = true;
                     ghosts.add(ghost);
                 } else if (mapChar == 'p') {
                     Block ghost = new Block(pinkGhost, c, r, tileSize, tileSize);
@@ -255,71 +334,97 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                     Block ghost = new Block(redGhost, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
+                    if (!redGhostSpawnSet) { // Set general ghost pen to red ghost's spawn
+                        ghostPenGridX = c;
+                        ghostPenGridY = r;
+                        redGhostSpawnSet = true;
+                    }
                 } else if (mapChar == 'b') {
                     Block ghost = new Block(blueGhost, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
-                } else if (mapChar == '.' || mapChar == '-') { // Handle both food chars
+                } else if (mapChar == ' ') {
                     Block pellet = new Block(null, c, r, tileSize, tileSize);
                     foods.add(pellet);
+                } else if (mapChar == '0') { // Power Pellet
+                    Block powerPellet = new Block(null, c, r, tileSize, tileSize); // Texture is null, drawn as circle
+                    powerPellets.add(powerPellet);
                 }
-                // Ignore empty spaces ' '
             }
         }
         if (pacman == null) {
             System.err.println("Warning: Pacman start position 'P' not found in map!");
-            // Optionally place Pacman at a default location or throw error
-            pacman = new Block(pacmanRight, 1, 1, tileSize, tileSize); // Default fallback
+            pacman = new Block(pacmanRight, 1, 1, tileSize, tileSize);
         }
-        ghostPowers = new GhostPowers(this);
+        // Ensure ghost pen is somewhat reasonable if 'r' wasn't in the map
+        if (!redGhostSpawnSet && !ghosts.isEmpty()) {
+            Block firstGhost = ghosts.iterator().next();
+            ghostPenGridX = firstGhost.start_X_GridPosition;
+            ghostPenGridY = firstGhost.start_Y_GridPosition;
+        } else if (!redGhostSpawnSet && ghosts.isEmpty()) {
+            // Fallback if no ghosts are defined
+            ghostPenGridX = columnCount / 2;
+            ghostPenGridY = rowCount / 2;
+        }
+
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        drawBoard(g); // Use a separate method for drawing
+        drawBoard(g);
     }
 
-    // Separate drawing logic
     private void drawBoard(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
 
         // Draw Food Pellets
         g.setColor(new Color(253, 245, 185));
         for (Block food : foods) {
-            // Draw smaller dots centered in the tile
             g.fillOval(food.x_position + tileSize / 2 - 3, food.y_position + tileSize / 2 - 3, 6, 6);
         }
 
+        // Draw Power Pellets
+        g.setColor(new Color(255, 184, 174)); // A light pink/peach color for power pellets
+        for (Block pp : powerPellets) {
+            g.fillOval(pp.x_position + tileSize / 2 - 6, pp.y_position + tileSize / 2 - 6, 12, 12); // Larger than food
+        }
+
         // Draw Walls
-        // g2d.setColor(Color.BLUE); // Keep blue for debugging if needed
         for (Block wall : walls) {
             if (wall.texture != null) {
                 g2d.drawImage(wall.texture, wall.x_position, wall.y_position, tileSize, tileSize, this);
-            } else {
-                // Optionally draw a default color for walls without textures
-                // g2d.fillRect(wall.x_position, wall.y_position, tileSize, tileSize);
             }
         }
 
         // Draw Ghosts
         for (Block ghost : ghosts) {
-            if (ghost.texture != null) {
+            if (ghost.texture != null) { // Texture might be null if blue ghost is invisible AND energizer not active
+                g2d.drawImage(ghost.texture, ghost.x_position, ghost.y_position, tileSize, tileSize, this);
+            } else if (ghost.isFrightened || ghost.isEaten) { // Frightened/Eaten ghosts always have a texture
                 g2d.drawImage(ghost.texture, ghost.x_position, ghost.y_position, tileSize, tileSize, this);
             }
+            // If blue ghost is invisible due to its own power AND energizer is not active, it remains invisible.
+            // If energizer is active, blue ghost should show frightened texture.
         }
 
-        // Draw Pacman (draw last so he's on top)
+        // Draw Pacman
         if (pacman != null && pacman.texture != null) {
             g2d.drawImage(pacman.texture, pacman.x_position, pacman.y_position, tileSize, tileSize, this);
         }
 
-        // Draw Score/Lives (keep as is)
-        // ... (score/lives drawing code) ...
+        // Draw Bombs & Projectiles
+        for (Bomb bomb : activeBombs) {
+            bomb.draw(g2d, this);
+        }
+        for (Projectile projectile : activeProjectiles) {
+            projectile.draw(g2d);
+        }
+
+        // Draw Score/Lives UI
         g2d.setFont(PixelFont);
         g2d.setColor(Color.WHITE);
         g2d.drawString("Score: " + String.valueOf(score), boardWidth / 2 - 60, boardHeight + 32);
-
         g2d.drawString("Lives: ", 10, boardHeight + 32);
         int hearts_gap = 60;
         for (int i = 0; i < 3; i++) {
@@ -335,12 +440,10 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         updateGame();
-        checkCollisions(); // Check collisions after updates
+        checkCollisions();
         repaint();
     }
 
-    // --- KeyListener Methods (keep as is) ---
-    // ... (keyTyped, keyPressed, keyReleased) ...
     @Override
     public void keyTyped(KeyEvent e) {
         /* Not used */ }
@@ -354,17 +457,14 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     public void keyReleased(KeyEvent e) {
         /* Not used */ }
 
-    // --- Game State (keep as is) ---
-    private Direction pacmanNextDirection = Direction.NONE; // Input buffer
+    private Direction pacmanNextDirection = Direction.NONE;
 
-    // --- Input Handling (keep as is, but update state var names) ---
     private void handleKeyPress(int keyCode) {
         if (pacman == null) {
-            return; // Safety check
+            return;
         }
         Direction desiredDirection = Direction.NONE;
         switch (keyCode) {
-            // ... (key switch cases remain the same) ...
             case KeyEvent.VK_UP:
             case KeyEvent.VK_W:
                 desiredDirection = Direction.UP;
@@ -382,23 +482,17 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                 desiredDirection = Direction.RIGHT;
                 break;
             default:
-                return; // Ignore other keys
+                return;
         }
 
-        // Store the desired direction in the buffer
         pacmanNextDirection = desiredDirection;
 
-        // If Pacman isn't currently moving between tiles,
-        // or if the player wants to reverse direction immediately, try to move.
-        // Use pacman's internal state now.
         if (!pacman.isMoving || pacmanNextDirection == getOpposite(pacman.currentDirection)) {
             attemptToStartPacmanMove();
         }
-        // Otherwise, the nextDirection is buffered and will be checked
-        // when the current tile move finishes in updateGame.
     }
 
-    private Direction getOpposite(Direction dir) { // Keep this helper
+    private Direction getOpposite(Direction dir) {
         switch (dir) {
             case UP:
                 return Direction.DOWN;
@@ -413,43 +507,27 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    // --- Pacman Movement Logic (Rename methods/vars for clarity) ---
     private void attemptToStartPacmanMove() {
         if (pacman == null) {
-            return; // Safety check
+            return;
         }
-        // Prioritize the buffered direction ('pacmanNextDirection')
         if (pacmanNextDirection != Direction.NONE && canMove(pacman, pacmanNextDirection)) {
             startPacmanMove(pacmanNextDirection);
-            // Clear the buffer once the move starts based on it
             pacmanNextDirection = Direction.NONE;
-        } // If buffered direction is blocked or none, try continuing current direction (if any)
-        else if (pacman.currentDirection != Direction.NONE && canMove(pacman, pacman.currentDirection)) {
-            // Only start if not already moving in this direction (avoids redundant calls)
+        } else if (pacman.currentDirection != Direction.NONE && canMove(pacman, pacman.currentDirection)) {
             if (!pacman.isMoving) {
                 startPacmanMove(pacman.currentDirection);
             }
-            // Reset nextDirection if it was specifically blocked
             if (pacmanNextDirection != Direction.NONE && !canMove(pacman, pacmanNextDirection)) {
                 pacmanNextDirection = Direction.NONE;
             }
         } else {
-            // Cannot move in buffered or current direction.
-            // Pacman might be stationary but facing a direction. Don't change state here.
-            // If an invalid direction was buffered, clear it.
             if (pacmanNextDirection != Direction.NONE && !canMove(pacman, pacmanNextDirection)) {
                 pacmanNextDirection = Direction.NONE;
             }
-            // Ensure pacman is marked as stopped if he wasn't moving.
-            // If he was moving, the arrival logic in updateGame will handle stopping him.
-            // pacman.isMoving = false; // This might be set incorrectly if called while moving but blocked
         }
     }
 
-    /**
-     * Checks if a Block (Pacman or Ghost) can move into the tile in the given
-     * direction. Uses the current level's map data.
-     */
     private boolean canMove(Block block, Direction direction) {
         if (block == null || direction == Direction.NONE) {
             return false;
@@ -458,37 +536,27 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         int targetGridX = block.X_GridPosition + direction.getDx();
         int targetGridY = block.Y_GridPosition + direction.getDy();
 
-        // 1. Check Board Boundaries
         if (targetGridX < 0 || targetGridX >= columnCount
                 || targetGridY < 0 || targetGridY >= rowCount) {
-            // Handle wrap-around tunnels here later if needed
             return false;
         }
 
-        // 2. Check for Walls at the target grid position using the appropriate Level map
-        String[] currentLevelMap = getCurrentLevelMap(); // Helper to get current map
+        String[] currentLevelMap = getCurrentLevelMap();
         if (currentLevelMap == null) {
-            return false; // Safety check
+            return false;
         }
         try {
-            // Allow ghosts to move through the ghost house door ('-') maybe? Not implemented here.
             char tileAtTarget = currentLevelMap[targetGridY].charAt(targetGridX);
             if (tileAtTarget == 'X') {
-                return false; // It's a wall
+                return false;
             }
-            // Ghosts might have special rules about moving into certain squares (like the ghost house)
-            // Add those rules here if needed for specific ghost AI later.
-            // For now, random ghosts just avoid 'X' walls.
-
         } catch (ArrayIndexOutOfBoundsException e) {
             System.err.println("Error checking map bounds: " + targetGridX + "," + targetGridY);
             return false;
         }
-
-        return true; // Not out of bounds and not a wall
+        return true;
     }
 
-    // Helper to get the current level map array
     private String[] getCurrentLevelMap() {
         switch (level) {
             case 1:
@@ -498,28 +566,21 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             case 3:
                 return Level3;
             default:
-                return null; // Or handle error/default case
+                return null;
         }
     }
 
     private void startPacmanMove(Direction direction) {
-        // No need to check canMove again if attemptToStartPacmanMove already did,
-        // but it's a safe redundancy.
         if (pacman == null || !canMove(pacman, direction)) {
-            // Optional: Clear buffer if the intended move failed?
-            // if (direction == pacmanNextDirection) pacmanNextDirection = Direction.NONE;
-            return; // Don't start the move
+            return;
         }
 
-        // Set Pacman's internal state
         pacman.currentDirection = direction;
-        pacman.isMoving = true; // <-- CRITICAL FIX: Set the block's moving flag
+        pacman.isMoving = true;
 
-        // Calculate target pixel coordinates based on the *target grid* cell
         pacman.targetPixelX = (pacman.X_GridPosition + pacman.currentDirection.getDx()) * tileSize;
         pacman.targetPixelY = (pacman.Y_GridPosition + pacman.currentDirection.getDy()) * tileSize;
 
-        // Update pacman's texture based on direction
         switch (direction) {
             case UP:
                 pacman.texture = pacmanUp;
@@ -534,50 +595,22 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                 pacman.texture = pacmanRight;
                 break;
             default:
-                break; // Should not happen
+                break;
         }
     }
 
-    // --- Main Update Logic ---
     private void updateGame() {
         if (pacman == null) {
-            return; // Safety check
+            return;
         }
+
         // --- Update Pacman ---
-        if (pacman.isMoving) { // Check pacman's internal state
-            moveBlock(pacman, move_speed); // Use generic moveBlock
-        } else {
-            // Pacman is stationary at a tile center.
-            // Check for food *first* before attempting the next move.
-            foodCollision(); // Eat food on the tile Pacman is currently on
-            if (foods.isEmpty()) { // Check win condition after eating
-                if (!gameLoop.isRunning()) {
-                    return;
-                }
-                gameLoop.stop();
-                nextLevel();
-                return; // Exit update after level change attempt
-            }
-            // Now, attempt to start the next move based on buffer or continue intention
-            attemptToStartPacmanMove();
-        }
-
-        // Check if Pacman *finished* moving to a tile in this frame
-        // This must be checked AFTER moveBlock might have been called
-        if (pacman.isMoving && pacman.x_position == pacman.targetPixelX && pacman.y_position == pacman.targetPixelY) {
-            // Pacman arrived at the center of the target tile
-            pacman.isMoving = false; // Stop moving for now
-            // Update grid position *after* arriving
-            pacman.X_GridPosition += pacman.currentDirection.getDx();
-            pacman.Y_GridPosition += pacman.currentDirection.getDy();
-
-            // Snap pixel position exactly to the new grid center (good practice)
-            pacman.x_position = pacman.X_GridPosition * tileSize;
-            pacman.y_position = pacman.Y_GridPosition * tileSize;
-
-            // Check for food again *after* arriving at the new tile center
-            foodCollision();
-            if (foods.isEmpty()) { // Check win condition again
+        if (pacman.isMoving) {
+            moveBlock(pacman, move_speed);
+        } else { // Pacman is stationary at a tile center
+            foodCollision(); // Check for regular food
+            powerPelletCollision(); // Check for power pellets
+            if (foods.isEmpty() && powerPellets.isEmpty()) { // Win condition
                 if (!gameLoop.isRunning()) {
                     return;
                 }
@@ -585,116 +618,215 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                 nextLevel();
                 return;
             }
+            attemptToStartPacmanMove(); // Try to move again
+        }
 
-            // Immediately attempt the next move based on buffer/current direction
-            // This allows for continuous movement if the path is clear or turning if buffered
+        if (pacman.isMoving && pacman.x_position == pacman.targetPixelX && pacman.y_position == pacman.targetPixelY) {
+            // Pacman arrived at the center of the target tile
+            pacman.isMoving = false;
+            pacman.X_GridPosition += pacman.currentDirection.getDx();
+            pacman.Y_GridPosition += pacman.currentDirection.getDy();
+            pacman.x_position = pacman.X_GridPosition * tileSize;
+            pacman.y_position = pacman.Y_GridPosition * tileSize;
+
+            foodCollision();
+            powerPelletCollision();
+            if (foods.isEmpty() && powerPellets.isEmpty()) {
+                if (!gameLoop.isRunning()) {
+                    return;
+                }
+                gameLoop.stop();
+                nextLevel();
+                return;
+            }
             attemptToStartPacmanMove();
         }
 
-        // --- Update Ghosts (remains the same) ---
-        for (Block ghost : ghosts) {
-            if (ghost.isMoving) {
-                moveBlock(ghost, ghost_move_speed);
-            } else {
-                attemptToStartGhostMove(ghost);
+        Iterator<Block> ghostIterator = ghosts.iterator();
+        while (ghostIterator.hasNext()) {
+            Block currentGhost = ghostIterator.next();
+            if (currentGhost == null) {
+                ghostIterator.remove();
+                continue;
             }
 
-            if (ghost.isMoving && ghost.x_position == ghost.targetPixelX && ghost.y_position == ghost.targetPixelY) {
-                ghost.isMoving = false;
-                ghost.X_GridPosition += ghost.currentDirection.getDx();
-                ghost.Y_GridPosition += ghost.currentDirection.getDy();
-                // Snap position (optional but good)
-                ghost.x_position = ghost.X_GridPosition * tileSize;
-                ghost.y_position = ghost.Y_GridPosition * tileSize;
+            // State 1: Ghost was eaten and just reached its starting pen position
+            if (currentGhost.isEaten && !currentGhost.isInPenWaiting
+                    && currentGhost.X_GridPosition == currentGhost.start_X_GridPosition
+                    && currentGhost.Y_GridPosition == currentGhost.start_Y_GridPosition) {
 
-                attemptToStartGhostMove(ghost);
+                // System.out.println("Ghost reached pen, starting wait: " + currentGhost.originalTexture);
+                currentGhost.enterPenToWait(this.ghostEatenTexture); // Pass the "eyes" texture
+            } // State 2: Ghost is in pen, waiting
+            else if (currentGhost.isInPenWaiting) {
+                if (System.currentTimeMillis() - currentGhost.penEntryTime > GHOST_PEN_WAIT_DURATION) {
+                    // Wait time is over
+                    // System.out.println("Ghost finished pen wait: " + currentGhost.originalTexture);
+                    currentGhost.finishPenWaitAndResetState(); // Resets isInPenWaiting, isEaten, isFrightened
+
+                    // Now determine its actual state (normal or frightened)
+                    if (energizerActive) {
+                        setGhostFrightened(currentGhost); // It becomes frightened immediately
+                    } else {
+                        setGhostNormal(currentGhost, true); // Becomes normal, true to reverse direction out of pen
+                    }
+                    // attemptToStartGhostMove will be called below if not moving
+                }
+                // While isInPenWaiting, it should not move, so skip movement logic below.
+                // Ensure it's marked as not moving:
+                currentGhost.isMoving = false;
+            }
+
+            // State 3: Ghost is active (not waiting in pen) - standard movement logic
+            if (!currentGhost.isInPenWaiting) { // Only move if not waiting in pen
+                if (currentGhost.isMoving) {
+                    int currentSpeed = ghost_move_speed;
+                    if (currentGhost.isFrightened) {
+                        currentSpeed = ghost_frightened_speed;
+                    } else if (currentGhost.isEaten) {
+                        currentSpeed = ghost_eaten_speed; // isEaten is for "returning to pen"
+                    }
+                    moveBlock(currentGhost, currentSpeed);
+                } else {
+                    attemptToStartGhostMove(currentGhost);
+                }
+
+                if (currentGhost.isMoving && currentGhost.x_position == currentGhost.targetPixelX && currentGhost.y_position == currentGhost.targetPixelY) {
+                    currentGhost.isMoving = false;
+                    currentGhost.X_GridPosition += currentGhost.currentDirection.getDx();
+                    currentGhost.Y_GridPosition += currentGhost.currentDirection.getDy();
+                    currentGhost.x_position = currentGhost.X_GridPosition * tileSize;
+                    currentGhost.y_position = currentGhost.Y_GridPosition * tileSize;
+
+                    // If it just arrived at a tile AND is not now waiting in pen (e.g. just finished waiting)
+                    if (!currentGhost.isInPenWaiting) {
+                        attemptToStartGhostMove(currentGhost);
+                    }
+                }
+            }
+        } // End of ghost iteration loop
+
+        // --- Update Projectiles & Bombs --- (Moved OUTSIDE and AFTER ghost loop)
+        // ... (projectile and bomb update logic - unchanged from your last version) ...
+        Iterator<Projectile> projIterator = activeProjectiles.iterator();
+        while (projIterator.hasNext()) {
+            Projectile p = projIterator.next();
+            p.move();
+            int projCenterX = p.x_position + p.width / 2;
+            int projCenterY = p.y_position + p.height / 2;
+            int projGridX = projCenterX / tileSize;
+            int projGridY = projCenterY / tileSize;
+            if (p.x_position < 0 || p.x_position + p.width > boardWidth
+                    || p.y_position < 0 || p.y_position + p.height > boardHeight
+                    || isWallAtGrid(projGridX, projGridY)) {
+                p.isActive = false;
+            }
+            if (!p.isActive) {
+                projIterator.remove();
+            }
+        }
+
+        Iterator<Bomb> bombIterator = activeBombs.iterator();
+        while (bombIterator.hasNext()) {
+            Bomb b = bombIterator.next();
+            b.update();
+            if (b.state == Bomb.BombState.DONE) {
+                bombIterator.remove();
             }
         }
     }
 
-    /**
-     * Generic function to move a block (Pacman or Ghost) towards its target
-     */
     private void moveBlock(Block block, int speed) {
         if (!block.isMoving || block.currentDirection == Direction.NONE) {
             return;
         }
 
-        // Move pixel position towards target X
         if (block.x_position < block.targetPixelX) {
             block.x_position += speed;
             if (block.x_position >= block.targetPixelX) {
-                block.x_position = block.targetPixelX; // Clamp/Snap
+                block.x_position = block.targetPixelX;
             }
         } else if (block.x_position > block.targetPixelX) {
             block.x_position -= speed;
             if (block.x_position <= block.targetPixelX) {
-                block.x_position = block.targetPixelX; // Clamp/Snap
+                block.x_position = block.targetPixelX;
             }
         }
 
-        // Move pixel position towards target Y
         if (block.y_position < block.targetPixelY) {
             block.y_position += speed;
             if (block.y_position >= block.targetPixelY) {
-                block.y_position = block.targetPixelY; // Clamp/Snap
+                block.y_position = block.targetPixelY;
             }
         } else if (block.y_position > block.targetPixelY) {
             block.y_position -= speed;
             if (block.y_position <= block.targetPixelY) {
-                block.y_position = block.targetPixelY; // Clamp/Snap
+                block.y_position = block.targetPixelY;
             }
         }
-
-        // NOTE: Checking for arrival and updating grid position is now done
-        // AFTER the moveBlock call in the main updateGame loop.
     }
 
-    // --- Ghost Movement Logic ---
     private void attemptToStartGhostMove(Block ghost) {
         if (ghost.isMoving) {
-            return; // Already moving
+            return;
         }
-        List<Direction> possibleDirections = getValidGhostDirections(ghost);
-        Direction preferredDirection = Direction.NONE;
 
-        if (!possibleDirections.isEmpty()) {
-            // Select a random direction from the valid ones
-            int randomIndex = random.nextInt(possibleDirections.size());
-            preferredDirection = possibleDirections.get(randomIndex);
+        Direction preferredDirection;
+
+        if (ghost.isEaten) {
+            // Pathfind back to pen (start_X_GridPosition, start_Y_GridPosition)
+            preferredDirection = getDirectionTowardsTarget(ghost, ghost.start_X_GridPosition, ghost.start_Y_GridPosition);
+        } else if (ghost.isFrightened) {
+            // Move randomly, but try not to reverse immediately
+            List<Direction> possibleDirections = getValidGhostDirections(ghost, true); // true = allow immediate reverse if only option
+            if (!possibleDirections.isEmpty()) {
+                preferredDirection = possibleDirections.get(random.nextInt(possibleDirections.size()));
+            } else { // Should be rare if allow immediate reverse is true
+                preferredDirection = getOpposite(ghost.currentDirection); // Last resort
+            }
         } else {
-            // Should only happen if trapped, maybe try reversing?
-            Direction opposite = getOpposite(ghost.currentDirection);
-            if (opposite != Direction.NONE && canMove(ghost, opposite)) {
-                preferredDirection = opposite;
+            // Normal ghost AI (random, but don't reverse unless necessary)
+            List<Direction> possibleDirections = getValidGhostDirections(ghost, false); // false = don't prefer immediate reverse
+            if (!possibleDirections.isEmpty()) {
+                preferredDirection = possibleDirections.get(random.nextInt(possibleDirections.size()));
+            } else { // Only one way to go (reverse) or completely trapped
+                preferredDirection = getOpposite(ghost.currentDirection); // Try reversing
+                if (!canMove(ghost, preferredDirection)) {
+                    preferredDirection = Direction.NONE; // Truly stuck
+                }
             }
         }
 
-        if (preferredDirection != Direction.NONE) {
+        if (preferredDirection != Direction.NONE && canMove(ghost, preferredDirection)) {
             startGhostMove(ghost, preferredDirection);
         } else {
-            // Ghost is stuck, keep its current state (facing direction)
-            ghost.isMoving = false; // Ensure it's marked as not moving
+            // If no valid move, ghost remains stationary for this tick.
+            // Ensure it's marked as not moving if a move couldn't be started.
+            ghost.isMoving = false;
+            // If it has a direction but can't move, it just faces that way.
+            // If preferredDirection was NONE, its currentDirection remains.
         }
     }
 
-    private List<Direction> getValidGhostDirections(Block ghost) {
+    private List<Direction> getValidGhostDirections(Block ghost, boolean allowImmediateReverse) {
         List<Direction> validDirections = new ArrayList<>();
         Direction oppositeDirection = getOpposite(ghost.currentDirection);
 
         for (Direction dir : new Direction[]{Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT}) {
-            // Basic AI: Don't allow immediate reversal unless it's the only option
-            if (dir == oppositeDirection && countValidDirections(ghost) > 1) { // Check if more than one way to go
-                continue; // Skip reversing if other paths exist
+            if (!allowImmediateReverse && dir == oppositeDirection && countValidDirections(ghost) > 1) {
+                continue;
             }
             if (canMove(ghost, dir)) {
                 validDirections.add(dir);
             }
         }
+        // If no directions found and immediate reverse was disallowed, but it's the only option:
+        if (validDirections.isEmpty() && !allowImmediateReverse && oppositeDirection != Direction.NONE && canMove(ghost, oppositeDirection)) {
+            validDirections.add(oppositeDirection);
+        }
         return validDirections;
     }
 
-    // Helper to count valid moves (excluding walls) from a ghost's position
     private int countValidDirections(Block ghost) {
         int count = 0;
         for (Direction dir : new Direction[]{Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT}) {
@@ -706,106 +838,215 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     }
 
     private void startGhostMove(Block ghost, Direction direction) {
-        // Redundant check, but safe:
-        if (!canMove(ghost, direction)) {
-            ghost.isMoving = false;
+        // ... (startGhostMove - largely unchanged, texture update is now handled by energizer state) ...
+        if (ghost == null || direction == Direction.NONE || !canMove(ghost, direction)) {
+            if (ghost != null) {
+                ghost.isMoving = false;
+            }
             return;
         }
-
         ghost.currentDirection = direction;
         ghost.isMoving = true;
-
-        // Calculate target pixel coordinates
         ghost.targetPixelX = (ghost.X_GridPosition + direction.getDx()) * tileSize;
         ghost.targetPixelY = (ghost.Y_GridPosition + direction.getDy()) * tileSize;
-
-        // Optional: Update ghost texture based on direction if you have sprites for it
+        // Ghost texture (normal, frightened, eaten) is managed by activate/deactivateEnergizer and when eaten
     }
 
-    // --- Collision Detection ---
-    // Check collisions after movements are processed
     private void checkCollisions() {
         if (pacman == null) {
             return;
         }
+        Rectangle pacmanBounds = new Rectangle(pacman.x_position, pacman.y_position, pacman.width, pacman.height);
 
         // Pacman vs Ghost Collision
-        for (Block ghost : ghosts) {
-            // Use a slightly smaller bounding box for collision to feel more forgiving
+        Iterator<Block> ghostIterator = ghosts.iterator(); // Use iterator for safe removal during iteration if needed
+        while (ghostIterator.hasNext()) {
+            Block ghost = ghostIterator.next();
+            if (ghost.texture == null && !ghost.isFrightened && !ghost.isEaten) { // e.g. Blue ghost power active
+                if (ghostPowers.blueGhost == ghost && collision(pacman, ghost)) { // Special check for invisible blue
+                    handlePlayerCaught();
+                    return;
+                }
+                continue; // Skip collision check if texture is null (and not frightened/eaten)
+            }
+
             if (collision(pacman, ghost)) {
-                System.out.println("Ghost Collision!");
-                handlePlayerCaught();
-                return; // Only handle one collision per frame
+                if (energizerActive && ghost.isFrightened && !ghost.isEaten) {
+                    eatGhost(ghost);
+                } else if (!ghost.isEaten) { // Don't get caught by already eaten ghosts
+                    handlePlayerCaught();
+                    return;
+                }
             }
         }
-        // Food collision is checked within pacman's movement logic when he enters a tile
-        // foodCollision(); // Moved into updateGame at tile arrival
+        // ... (Pacman vs Projectile, Pacman vs Bomb - unchanged) ...
+        Iterator<Projectile> projIterator = activeProjectiles.iterator();
+        while (projIterator.hasNext()) {
+            Projectile p = projIterator.next();
+            if (p.isActive && pacmanBounds.intersects(p.getBounds())) {
+                p.isActive = false;
+                handlePlayerCaught();
+                return;
+            }
+        }
+        for (Bomb bomb : activeBombs) {
+            if (bomb.state == Bomb.BombState.EXPLODING) {
+                int[][] DIRS = {{0, 0}, {0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+                for (int[] d : DIRS) {
+                    int ex = bomb.X_GridPosition + d[0];
+                    int ey = bomb.Y_GridPosition + d[1];
+                    if (ex >= 0 && ex < columnCount && ey >= 0 && ey < rowCount && !isWallAtGrid(ex, ey)) {
+                        if (pacmanBounds.intersects(bomb.getExplosionCellBounds(ex, ey))) {
+                            handlePlayerCaught();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    // Renamed from ghostCollision to be more general
+    private void eatGhost(Block ghost) {
+        if (!ghost.isFrightened || ghost.isEaten) {
+            return; // Can only eat frightened, not-yet-eaten ghosts
+        }
+        score += (100 * eatenGhostScoreMultiplier); // 200, 400, 800, 1600
+        eatenGhostScoreMultiplier *= 2;
+        System.out.println("Ate ghost! Score: " + score);
+
+        ghost.isFrightened = false;
+        ghost.isEaten = true;
+        ghost.texture = ghostEatenTexture;
+        // The ghost will now pathfind back to its pen (handled in attemptToStartGhostMove)
+    }
+
     private void handlePlayerCaught() {
         lives--;
-        System.out.println("Lives left: " + lives);
+        deactivateEnergizer();
+        activeProjectiles.clear();
+        activeBombs.clear();
+
+        // --- ADD CLONE CLEANUP ---
+        if (ghostPowers != null) {
+            ghostPowers.removePinkClones(); // New method in GhostPowers
+        }
+        // --- END CLONE CLEANUP ---
+
         if (lives <= 0) {
             gameOver();
         } else {
-            resetGamePositions(); // Reset Pacman and Ghosts to start positions
-
-            // Explicitly reset pacman's movement state after position reset
+            resetGamePositions(); // This will now operate on a list potentially cleared of clones
             if (pacman != null) {
-                pacman.isMoving = false;
-                pacman.currentDirection = Direction.RIGHT; // Or NONE, or keep last direction? Resetting is safer.
-                pacman.texture = pacmanRight; // Ensure texture matches state
+                pacman.currentDirection = Direction.RIGHT;
+                pacman.texture = pacmanRight;
             }
-            pacmanNextDirection = Direction.NONE; // Clear input buffer
-
-            // Reset ghost states too (already done in resetGamePositions, but explicit here is ok)
-            for (Block ghost : ghosts) {
-                ghost.isMoving = false;
-                ghost.currentDirection = Direction.NONE;
-            }
+            pacmanNextDirection = Direction.NONE;
         }
     }
 
-    // Renamed from foodCollision - check if Pacman is on a food tile
     private void foodCollision() {
-        if (pacman == null) {
-            return;
+        if (pacman == null || pacman.isMoving) {
+            return; // Only check when pacman is centered on a tile
         }
-
         Block foodEaten = null;
         for (Block food : foods) {
-            // Check if Pacman's center is within the food tile
             if (pacman.X_GridPosition == food.X_GridPosition && pacman.Y_GridPosition == food.Y_GridPosition) {
                 foodEaten = food;
-                break; // Eat one food per check
+                break;
             }
         }
-
         if (foodEaten != null) {
             foods.remove(foodEaten);
             score += 10;
-            System.out.println("Score: " + score); // Debugging
-            // Win condition check moved to updateGame after food check
+            // System.out.println("Score: " + score); 
+        }
+    }
+
+    private void powerPelletCollision() {
+        if (pacman == null || pacman.isMoving) {
+            return; // Only check when pacman is centered on a tile
+        }
+        Block ppEaten = null;
+        for (Block pp : powerPellets) {
+            if (pacman.X_GridPosition == pp.X_GridPosition && pacman.Y_GridPosition == pp.Y_GridPosition) {
+                ppEaten = pp;
+                break;
+            }
+        }
+        if (ppEaten != null) {
+            powerPellets.remove(ppEaten);
+            score += 50; // Score for power pellet
+            activateEnergizer();
+            System.out.println("Power Pellet Eaten! Score: " + score);
+        }
+    }
+
+    private void activateEnergizer() {
+        energizerActive = true;
+        eatenGhostScoreMultiplier = 1; // Reset for the 200,400,800,1600 sequence
+        for (Block ghost : ghosts) {
+            if (!ghost.isEaten) { // Don't affect already eaten ghosts
+                setGhostFrightened(ghost);
+            }
+        }
+        energizerTimer.restart(); // Start/restart the countdown
+        System.out.println("Energizer ACTIVE!");
+    }
+
+    private void setGhostFrightened(Block ghost) {
+        ghost.isFrightened = true;
+        ghost.isEaten = false; // Ensure not marked as eaten
+        // ghost.originalTexture is already set at Block creation or when returning to normal
+        ghost.texture = ghostFrightenedTexture;
+        // Reverse ghost direction when first frightened
+        ghost.currentDirection = getOpposite(ghost.currentDirection);
+        // If it was stationary, it will pick a new random direction in attemptToStartGhostMove
+        ghost.isMoving = false; // Force re-evaluation of move
+    }
+
+    private void deactivateEnergizer() {
+        energizerActive = false;
+        eatenGhostScoreMultiplier = 1;
+        for (Block ghost : ghosts) {
+            if (!ghost.isEaten) { // Only revert ghosts that are not currently "eyes"
+                setGhostNormal(ghost, false); // false = don't reverse, just revert state
+            }
+        }
+        if (energizerTimer.isRunning()) {
+            energizerTimer.stop();
+        }
+        System.out.println("Energizer Wore Off.");
+    }
+
+    private void setGhostNormal(Block ghost, boolean reverseDirection) {
+        ghost.isFrightened = false;
+        ghost.isEaten = false; // Should already be false unless it just respawned
+        ghost.texture = ghost.originalTexture; // Restore original look
+
+        if (ghost.texture == null && ghost == ghostPowers.blueGhost && ghostPowers.boolBlueInvis) {
+            // If blue ghost's power is to be invisible, it remains invisible.
+            // This logic depends on how GhostPowers interacts.
+            // For now, assume energizer overrides blue's invisibility.
+            // If blue should revert to invisible:
+            // ghost.texture = null; 
+        } else {
+            ghost.texture = ghost.originalTexture;
+        }
+
+        if (reverseDirection) {
+            ghost.currentDirection = getOpposite(ghost.currentDirection);
+            ghost.isMoving = false; // Force re-evaluation of move
         }
     }
 
     public void nextLevel() {
-        if (!gameLoop.isRunning()) { // Prevent multiple dialogs if already stopped
-            // If called externally while stopped, decide behavior (e.g., just load next level data)
-            System.out.println("Attempting level advance while stopped.");
-            // return; // Or proceed to load map data below
-        } else {
-            gameLoop.stop(); // Ensure timer is stopped
+        // ... (nextLevel logic - unchanged, but ensure energizer is reset) ...
+        if (gameLoop.isRunning()) {
+            gameLoop.stop();
         }
+        deactivateEnergizer(); // Stop energizer effects before showing dialog / loading next
 
-        int response = JOptionPane.showConfirmDialog(
-                this, // Parent component (the panel itself)
-                "Level " + level + " Cleared!\nScore: " + score + "\nContinue to next level?", // Message
-                "Level Complete", // Title
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
-
+        int response = JOptionPane.showConfirmDialog(this, "Level " + level + " Cleared!\nScore: " + score + "\nContinue to next level?", "Level Complete", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (response == JOptionPane.YES_OPTION) {
             level++;
             System.out.println("Starting Level " + level);
@@ -817,26 +1058,19 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                 case 3:
                     nextMap = Level3;
                     break;
-                // Add more cases for more levels
                 default:
                     System.out.println("All levels completed or level not found!");
-                    gameOver(); // Or show a "You Win" screen
-                    return; // Exit if no next level
+                    gameOver();
+                    return;
             }
-            loadLevel(nextMap); // Load the new map data
-            resetGamePositions(); // Reset positions for the new level
-            score = score; // Keep score across levels (reset if needed)
-            // lives = lives; // Keep remaining lives (reset if needed)
-            startGame(); // Restart the timer and game loop
+            loadLevel(nextMap);
+            startGame(); // This will reset positions, clear projectiles/bombs, re-init GhostPowers, and start loop
         } else {
-            // Player chose NO
-            gameOver(); // Go back to menu or end game
+            gameOver();
         }
     }
 
-    // Simple collision check between two Blocks (Axis-Aligned Bounding Box)
     public boolean collision(Block a, Block b) {
-        // Add a small tolerance (e.g., 2 pixels) to make collisions less strict at corners
         int tolerance = 4;
         return a.x_position < b.x_position + b.width - tolerance
                 && a.x_position + a.width > b.x_position + tolerance
@@ -844,54 +1078,264 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                 && a.y_position + a.height > b.y_position + tolerance;
     }
 
-    // Reset just the positions of Pacman and Ghosts
-    // Reset just the positions of Pacman and Ghosts
     private void resetGamePositions() {
+        // ... (resetGamePositions - ensure energizer effects are reset on ghosts) ...
         if (pacman != null) {
             pacman.x_position = pacman.start_x;
             pacman.y_position = pacman.start_y;
             pacman.X_GridPosition = pacman.start_X_GridPosition;
             pacman.Y_GridPosition = pacman.start_Y_GridPosition;
-            pacman.isMoving = false; // Correctly resets internal state
-            pacman.currentDirection = Direction.NONE; // Correctly resets internal state (Set to RIGHT if you prefer)
-            pacman.texture = pacmanRight; // Reset texture
+            pacman.isMoving = false;
+            pacman.currentDirection = Direction.NONE;
+            pacman.texture = pacmanRight;
         }
-        
-        for (Block ghost: ghosts){
+
+        for (Block ghost : ghosts) {
             ghost.x_position = ghost.start_x;
             ghost.y_position = ghost.start_y;
             ghost.X_GridPosition = ghost.start_X_GridPosition;
             ghost.Y_GridPosition = ghost.start_Y_GridPosition;
+            ghost.isMoving = false;
+            ghost.currentDirection = Direction.NONE;
+            setGhostNormal(ghost, false); // Reset to normal state
         }
-
-        // Clear Pacman's buffered input
         pacmanNextDirection = Direction.NONE;
+        deactivateEnergizer(); // Make sure energizer is off
     }
 
-    // Reset game state completely (lives, score, positions) - called on game over or restart
     private void resetGame() {
+        // ... (resetGame - full game reset, ensures energizer off) ...
         lives = 3;
         score = 0;
-        level = 1; // Reset to level 1
-        loadLevel(Level1); // Reload the first level map
-        resetGamePositions(); // Reset positions
-        gameLoop.stop(); // Ensure game loop is stopped before potentially restarting
-        // Don't automatically restart the loop here, let App handle showing menu/starting game
+        level = 1;
+        deactivateEnergizer();
+        if (gameLoop.isRunning()) {
+            gameLoop.stop();
+        }
+        loadLevel(Level1);
+        // startGame() will be called by App to show menu first.
     }
 
-    // Game Over Mechanic
     private void gameOver() {
-        gameLoop.stop();
+        // ... (gameOver - ensure energizer off) ...
+        if (gameLoop.isRunning()) {
+            gameLoop.stop();
+        }
+        deactivateEnergizer();
         app.MainFrame.setSize(980, 780);
         app.MainFrame.setLocationRelativeTo(null);
-         app.gameOverPanel.setScore(score);
+        app.gameOverPanel.setScore(score);
         app.cardLayout.show(app.MainPanel, "gameover");
-
     }
 
-    // Method to give focus to the panel (usually called from App.java)
+    public boolean isWallAtGrid(int gridX, int gridY) {
+        if (gridX < 0 || gridX >= columnCount || gridY < 0 || gridY >= rowCount) {
+            return true;
+        }
+        String[] currentMap = getCurrentLevelMap();
+        if (currentMap != null && gridY >= 0 && gridY < currentMap.length
+                && gridX >= 0 && gridX < currentMap[gridY].length()) { // Added bounds check for safety
+            return currentMap[gridY].charAt(gridX) == 'X';
+        }
+        return true;
+    }
+
+    public boolean isBombAtGrid(int gridX, int gridY) {
+        for (Bomb bomb : activeBombs) {
+            if (bomb.X_GridPosition == gridX && bomb.Y_GridPosition == gridY && bomb.state != Bomb.BombState.DONE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void addProjectile(Projectile p) {
+        SwingUtilities.invokeLater(() -> {
+            activeProjectiles.add(p);
+        });
+    }
+
+    public void addBomb(Bomb b) {
+        SwingUtilities.invokeLater(() -> {
+            activeBombs.add(b);
+        });
+    }
+
     public void requestPanelFocus() {
         requestFocusInWindow();
     }
-}
 
+    // Inside PacmanGame class, maybe at the very end or as a private static inner class
+    private static class PathNode implements Comparable<PathNode> {
+
+        int x, y; // Grid coordinates
+        int gCost; // Cost from start to this node
+        int hCost; // Heuristic cost from this node to target
+        int fCost; // gCost + hCost
+        PathNode parent;
+
+        public PathNode(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public void calculateFCost() {
+            fCost = gCost + hCost;
+        }
+
+        @Override
+        public int compareTo(PathNode other) {
+            // For priority queue: lower fCost is higher priority
+            // If fCosts are equal, use hCost as a tie-breaker (helps find more direct paths)
+            if (this.fCost == other.fCost) {
+                return Integer.compare(this.hCost, other.hCost);
+            }
+            return Integer.compare(this.fCost, other.fCost);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            PathNode pathNode = (PathNode) obj;
+            return x == pathNode.x && y == pathNode.y;
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(x, y); // Simple hash based on coordinates
+        }
+    }
+
+    private Direction getDirectionTowardsTarget(Block mover, int targetGridX, int targetGridY) {
+        PathNode startNode = new PathNode(mover.X_GridPosition, mover.Y_GridPosition);
+        PathNode targetNode = new PathNode(targetGridX, targetGridY);
+
+        // A* open list (nodes to be evaluated), implemented as a PriorityQueue
+        PriorityQueue<PathNode> openList = new PriorityQueue<>();
+        // A* closed list (nodes already evaluated), using HashSet for fast lookups
+        HashSet<PathNode> closedList = new HashSet<>();
+
+        startNode.gCost = 0;
+        startNode.hCost = calculateManhattanDistance(startNode, targetNode);
+        startNode.calculateFCost();
+        openList.add(startNode);
+
+        while (!openList.isEmpty()) {
+            PathNode currentNode = openList.poll(); // Get node with lowest fCost
+
+            if (currentNode.equals(targetNode)) {
+                // Path found, reconstruct and return the first step
+                return getFirstStepFromPath(startNode, currentNode);
+            }
+
+            closedList.add(currentNode);
+
+            // Check neighbors (Up, Down, Left, Right)
+            for (Direction dir : Direction.values()) {
+                if (dir == Direction.NONE) {
+                    continue;
+                }
+
+                int neighborX = currentNode.x + dir.getDx();
+                int neighborY = currentNode.y + dir.getDy();
+
+                // Check if neighbor is valid (within bounds and not a wall)
+                // Eaten ghosts can often pass through the ghost house door ('-'),
+                // so canMove might need adjustment or we make a special check here.
+                // For now, assume canMove checks for walls ('X').
+                // For eaten ghosts, we might want a special `canEatenGhostMove`
+                // if they have different movement rules (e.g., through the ghost door).
+                // Let's make a simple check: allow movement if not a wall ('X')
+                if (neighborX < 0 || neighborX >= columnCount || neighborY < 0 || neighborY >= rowCount
+                        || isWallAtGrid(neighborX, neighborY)) { // Basic wall check
+                    continue;
+                }
+                // If you have a specific ghost door tile (e.g., '-') and eaten ghosts can pass:
+                // String[] currentMap = getCurrentLevelMap();
+                // char tileAtNeighbor = (currentMap != null && neighborY < currentMap.length && neighborX < currentMap[neighborY].length()) ?
+                //                       currentMap[neighborY].charAt(neighborX) : 'X';
+                // if (tileAtNeighbor == 'X') { // Strict wall check
+                //    continue;
+                // }
+                // Or, if mover.isEaten, allow passing through '-' even if canMove would normally block it for non-eaten ghosts.
+                // For simplicity now, isWallAtGrid should be sufficient if '-' is not 'X'.
+
+                PathNode neighborNode = new PathNode(neighborX, neighborY);
+                if (closedList.contains(neighborNode)) {
+                    continue; // Already evaluated
+                }
+
+                // Cost to move to neighbor is current gCost + 1 (assuming uniform cost)
+                int tentativeGCost = currentNode.gCost + 1;
+
+                boolean inOpenList = openList.contains(neighborNode);
+                if (!inOpenList || tentativeGCost < neighborNode.gCost) {
+                    neighborNode.parent = currentNode;
+                    neighborNode.gCost = tentativeGCost;
+                    neighborNode.hCost = calculateManhattanDistance(neighborNode, targetNode);
+                    neighborNode.calculateFCost();
+
+                    if (!inOpenList) {
+                        openList.add(neighborNode);
+                    } else {
+                        // If already in openList, remove and re-add to update priority
+                        // (PriorityQueue doesn't auto-reorder on element change)
+                        openList.remove(neighborNode); // Requires PathNode.equals() and hashCode()
+                        openList.add(neighborNode);
+                    }
+                }
+            }
+        }
+
+        // No path found
+        // Fallback: try any valid random move if A* fails (should be rare with good map design)
+        System.err.println("A* pathfinding failed for ghost at (" + mover.X_GridPosition + "," + mover.Y_GridPosition + ") to (" + targetGridX + "," + targetGridY + "). Falling back.");
+        List<Direction> allValid = getValidGhostDirections(mover, true); // true = allow reverse
+        if (!allValid.isEmpty()) {
+            return allValid.get(random.nextInt(allValid.size()));
+        }
+        return Direction.NONE;
+    }
+
+// Helper for A*: Manhattan distance heuristic
+    private int calculateManhattanDistance(PathNode a, PathNode b) {
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    }
+
+// Helper for A*: Reconstruct path and get the first direction
+    private Direction getFirstStepFromPath(PathNode startNode, PathNode targetNode) {
+        PathNode current = targetNode;
+        PathNode previous = null;
+        while (current.parent != null && !current.parent.equals(startNode)) {
+            previous = current;
+            current = current.parent;
+        }
+        // If current.parent is startNode, then 'current' is the first step.
+        // If targetNode is adjacent to startNode, current will be targetNode and its parent is startNode.
+        // Or if the loop finished and previous is not null, previous was the one before target, so current is the step from start.
+
+        // The node 'current' is the first actual step from startNode
+        int dx = current.x - startNode.x;
+        int dy = current.y - startNode.y;
+
+        if (dx == 1) {
+            return Direction.RIGHT;
+        }
+        if (dx == -1) {
+            return Direction.LEFT;
+        }
+        if (dy == 1) {
+            return Direction.DOWN;
+        }
+        if (dy == -1) {
+            return Direction.UP;
+        }
+
+        return Direction.NONE; // Should not happen if path is valid
+    }
+}

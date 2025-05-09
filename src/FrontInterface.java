@@ -101,7 +101,7 @@ public class FrontInterface extends JPanel {
         settingsButton.setBounds(newX+350, btnYStart + btnSpacing * 3, 50, 50);
         add(settingsButton);
 
-        JButton trophysButton = createImageButton("./assets/ui_graphics/Trophy.gif", 100, 100);
+        JButton trophysButton = createImageButton("./assets/ui_graphics/trophy.png", 100, 100);
         trophysButton.setBounds(newX+300, btnYStart + btnSpacing * 3, 50, 50);
         trophysButton.addActionListener(new leaderboard());
         add(trophysButton);
