@@ -27,10 +27,11 @@ public class App {
         JPanel PacmanGame = new PacmanGame(this);
         JPanel FrontInterface = new FrontInterface(this, (PacmanGame) PacmanGame);
         JPanel AboutUs = new AboutUsPanel(this);
-        JPanel GameOver = new GameOverPanel(this);
+        
         gameOverPanel = new GameOverPanel(this); // Game Over Panel
         scorePanel = new Score(this); // Score Panel
         JPanel Leaderboard = new Leaderboard(this);
+        JPanel Settings = new Settings(this);
         
         // Adding the JPanels to the main panel for switching different
         // interfaces. (Name)           (keyword)
@@ -41,6 +42,8 @@ public class App {
         MainPanel.add(gameOverPanel, "gameover");  
         MainPanel.add(scorePanel, "score");
         MainPanel.add(Leaderboard,"leaderboard");
+        MainPanel.add(Settings,"settings");
+        
 
         MainFrame.getContentPane().add(MainPanel);
         //MainFrame.setSize(960,540);

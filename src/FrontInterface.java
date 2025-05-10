@@ -57,8 +57,8 @@ public class FrontInterface extends JPanel {
         playButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/New_Play.png")).getImage().getScaledInstance(btnWidth, btnHeight, Image.SCALE_SMOOTH);
         helpButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Help.png")).getImage().getScaledInstance(newWidth, 80, Image.SCALE_SMOOTH);
         aboutButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/About.png")).getImage().getScaledInstance(newWidth, 80, Image.SCALE_SMOOTH);
-        settingsButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Settings_Gear.gif")).getImage().getScaledInstance(gifWidth-30, gifHeight-30, Image.SCALE_DEFAULT);
-        trophyButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Trophy.gif")).getImage().getScaledInstance(gifWidth*2+200, gifHeight*2+40, Image.SCALE_DEFAULT);
+        settingsButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Settings_Gear.gif")).getImage().getScaledInstance(gifWidth - 30, gifHeight - 30, Image.SCALE_DEFAULT);
+        trophyButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Trophy.gif")).getImage().getScaledInstance(gifWidth * 2 + 200, gifHeight * 2 + 40, Image.SCALE_DEFAULT);
 
         JLabel redGhost_lbl = new JLabel(new ImageIcon(redGhost));
         JLabel orangeGhost_lbl = new JLabel(new ImageIcon(orangeGhost));
@@ -107,6 +107,7 @@ public class FrontInterface extends JPanel {
         settingsButton.setContentAreaFilled(false);
         settingsButton.setFocusPainted(false);
         settingsButton.setBounds(newX + 350, btnYStart + btnSpacing * 3, 50, 50);
+        settingsButton.addActionListener(new settings());
         add(settingsButton);
 
         JButton trophysButton = new JButton();
@@ -127,6 +128,16 @@ public class FrontInterface extends JPanel {
             if (response == JOptionPane.YES_OPTION) {
                 System.exit(0);  // This will terminate the application
             }
+        }
+    }
+
+    private class settings implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            app.MainFrame.setSize(680, 747);
+            app.MainFrame.setLocationRelativeTo(null);
+            app.cardLayout.show(app.MainPanel, "settings");
         }
     }
 
