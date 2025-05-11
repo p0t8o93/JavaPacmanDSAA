@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -39,14 +40,16 @@ public class Settings extends JPanel {
         musicOffIcon = new ImageIcon(musicOffIcon.getImage().getScaledInstance(90, 70, Image.SCALE_SMOOTH));
         soundOnIcon = new ImageIcon(soundOnIcon.getImage().getScaledInstance(90, 70, Image.SCALE_SMOOTH));
         soundOffIcon = new ImageIcon(soundOffIcon.getImage().getScaledInstance(90, 70, Image.SCALE_SMOOTH));
-   
+
         JLabel setting_lbl = new JLabel(new ImageIcon(settingpanel));
-        setting_lbl.setBounds(140,250,400,300);
+        setting_lbl.setBounds(140, 250, 400, 300);
 
         musicButton = new JButton(musicOnIcon);
         musicButton.setBounds(250, 450, musicOnIcon.getIconWidth(), musicOnIcon.getIconHeight());
         musicButton.setBorderPainted(false);
         musicButton.setContentAreaFilled(false);
+        musicButton.setFocusPainted(false);
+        
         musicButton.addActionListener(e -> {
             musicOn = !musicOn;
             musicButton.setIcon(musicOn ? musicOnIcon : musicOffIcon);
@@ -62,6 +65,7 @@ public class Settings extends JPanel {
         soundButton.setBounds(360, 450, soundOnIcon.getIconWidth(), soundOnIcon.getIconHeight());
         soundButton.setBorderPainted(false);
         soundButton.setContentAreaFilled(false);
+        soundButton.setFocusPainted(false);
         soundButton.addActionListener(e -> {
             soundOn = !soundOn;
             soundButton.setIcon(soundOn ? soundOnIcon : soundOffIcon);
@@ -86,6 +90,7 @@ public class Settings extends JPanel {
     }
 
     private class BackAction implements ActionListener {
+
         @Override
         public void actionPerformed(ActionEvent e) {
             app.MainFrame.setSize(680, 747);
@@ -104,8 +109,9 @@ public class Settings extends JPanel {
 
     public void playLobbyMusic(String relativePath) {
         try {
-            if (clip != null && clip.isRunning()) return; // Avoid restarting
-
+            if (clip != null && clip.isRunning()) {
+                return; // Avoid restarting
+            }
             URL soundURL = getClass().getClassLoader().getResource(relativePath);
             if (soundURL == null) {
                 System.out.println("Could not find file: " + relativePath);
@@ -121,10 +127,12 @@ public class Settings extends JPanel {
             e.printStackTrace();
         }
     }
-     public void playintermissionMusic(String relativePath) {
-        try {
-            if (clip != null && clip.isRunning()) return; // Avoid restarting
 
+    public void playintermissionMusic(String relativePath) {
+        try {
+            if (clip != null && clip.isRunning()) {
+                return; // Avoid restarting
+            }
             URL soundURL = getClass().getClassLoader().getResource(relativePath);
             if (soundURL == null) {
                 System.out.println("Could not find file: " + relativePath);
@@ -146,9 +154,11 @@ public class Settings extends JPanel {
             clip.close();
         }
     }
-      public Clip getClip() {
+
+    public Clip getClip() {
         return clip;
     }
+
     public boolean getMusic() {
         return musicOn;
     }
