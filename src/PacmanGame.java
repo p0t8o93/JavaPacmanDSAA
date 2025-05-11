@@ -46,7 +46,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     private Image wallTDown;
 
     int score = 0;
-    int lives = 1;
+    int lives = 3;
     // Make move_speed an int if possible for simpler pixel math, or keep double if needed
     // Ensure tileSize is divisible by move_speed if int, or handle potential floating point issues
     int move_speed = 4; // Example: Changed to int, ensure tileSize (32) % move_speed (4) == 0
@@ -637,6 +637,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         app.MainFrame.setLocationRelativeTo(null);
          app.gameOverPanel.setScore(score);
         app.cardLayout.show(app.MainPanel, "gameover");
+        
 
     }
 }
