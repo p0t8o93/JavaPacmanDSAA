@@ -1,8 +1,10 @@
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import javax.sound.sampled.*;
+import java.io.IOException;
+import java.net.URL;
 
 public class Settings extends JPanel {
 
@@ -18,6 +20,7 @@ public class Settings extends JPanel {
     private ImageIcon soundOnIcon;
     private ImageIcon soundOffIcon;
     private Image settingpanel;
+    public Clip clip;
 
     public Settings(App mainMenu) {
         this.app = mainMenu;
@@ -37,19 +40,20 @@ public class Settings extends JPanel {
         soundOnIcon = new ImageIcon(soundOnIcon.getImage().getScaledInstance(90, 70, Image.SCALE_SMOOTH));
         soundOffIcon = new ImageIcon(soundOffIcon.getImage().getScaledInstance(90, 70, Image.SCALE_SMOOTH));
    
-        
         JLabel setting_lbl = new JLabel(new ImageIcon(settingpanel));
         setting_lbl.setBounds(140,250,400,300);
-        
+
         musicButton = new JButton(musicOnIcon);
         musicButton.setBounds(250, 450, musicOnIcon.getIconWidth(), musicOnIcon.getIconHeight());
         musicButton.setBorderPainted(false);
         musicButton.setContentAreaFilled(false);
-        musicButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                musicOn = !musicOn;
-                musicButton.setIcon(musicOn ? musicOnIcon : musicOffIcon);
+        musicButton.addActionListener(e -> {
+            musicOn = !musicOn;
+            musicButton.setIcon(musicOn ? musicOnIcon : musicOffIcon);
+            if (musicOn) {
+                playLobbyMusic("assets/game_sounds/Loby music.wav");
+            } else {
+                stopMusic();
             }
         });
         add(musicButton);
@@ -58,25 +62,21 @@ public class Settings extends JPanel {
         soundButton.setBounds(360, 450, soundOnIcon.getIconWidth(), soundOnIcon.getIconHeight());
         soundButton.setBorderPainted(false);
         soundButton.setContentAreaFilled(false);
-        soundButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                soundOn = !soundOn;
-                soundButton.setIcon(soundOn ? soundOnIcon : soundOffIcon);
-            }
+        soundButton.addActionListener(e -> {
+            soundOn = !soundOn;
+            soundButton.setIcon(soundOn ? soundOnIcon : soundOffIcon);
         });
         add(soundButton);
+
         add(setting_lbl);
+
         backButtonImg = new ImageIcon(getClass().getResource("./assets/ui_graphics/Back.png")).getImage();
         JButton topRightLabel = createImageButton("./assets/ui_graphics/Back.png", backButtonImg.getWidth(this), backButtonImg.getHeight(this));
         topRightLabel.setBounds(600, 15, backButtonImg.getWidth(this), backButtonImg.getHeight(this));
         topRightLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
         topRightLabel.setOpaque(false);
-
-        topRightLabel.addActionListener(new Settings.back());
+        topRightLabel.addActionListener(new BackAction());
         add(topRightLabel);
-
     }
 
     @Override
@@ -85,12 +85,9 @@ public class Settings extends JPanel {
         g.drawImage(bgFrame, 0, 0, getWidth(), getHeight(), this);
     }
 
-    private class back implements ActionListener {
-
+    private class BackAction implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            // Switch the JPanel of FrontInterface to Pacmangame
-
             app.MainFrame.setSize(680, 747);
             app.MainFrame.setLocationRelativeTo(null);
             app.cardLayout.show(app.MainPanel, "frontinterface");
@@ -103,5 +100,56 @@ public class Settings extends JPanel {
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         return button;
+    }
+
+    public void playLobbyMusic(String relativePath) {
+        try {
+            if (clip != null && clip.isRunning()) return; // Avoid restarting
+
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            clip = AudioSystem.getClip();
+            clip.open(audioInput);
+            clip.loop(Clip.LOOP_CONTINUOUSLY);
+            clip.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+     public void playintermissionMusic(String relativePath) {
+        try {
+            if (clip != null && clip.isRunning()) return; // Avoid restarting
+
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            clip = AudioSystem.getClip();
+            clip.open(audioInput);
+            clip.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void stopMusic() {
+        if (clip != null && clip.isRunning()) {
+            clip.stop();
+            clip.close();
+        }
+    }
+      public Clip getClip() {
+        return clip;
+    }
+    public boolean getMusic() {
+        return musicOn;
     }
 }

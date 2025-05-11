@@ -1,13 +1,18 @@
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import javax.sound.sampled.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import javax.swing.Timer; 
+
 
 public class FrontInterface extends JPanel {
-
+   
     private App app;
     private PacmanGame Game;
 
@@ -117,6 +122,7 @@ public class FrontInterface extends JPanel {
         trophysButton.setBounds(newX + 300, btnYStart + btnSpacing * 3, 50, 50);
         trophysButton.addActionListener(new leaderboard());
         add(trophysButton);
+       
 
     }
 
@@ -168,19 +174,65 @@ public class FrontInterface extends JPanel {
     private int boardWidth = columnCount * tileSize;
     private int boardHeight = rowCount * tileSize;
 
-    private class PlayGame implements ActionListener {
+private class PlayGame implements ActionListener {
 
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // Switch the JPanel of FrontInterface to Pacmangame
-            Game.setFocusable(true);
-            app.MainFrame.setSize(boardWidth + 16, boardHeight + 110);
-            app.MainFrame.setLocationRelativeTo(null);
-            app.cardLayout.show(app.MainPanel, "pacmangame");
-            Game.requestPanelFocus();
-            Game.startGame();
+    private Timer timer; // Timer for intermission music delay
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        
+       
+        Clip clip = app.settings.getClip(); 
+        if (clip != null && clip.isRunning()) {
+            app.settings.stopMusic(); // Stop the lobby music
         }
+
+        // Switch to the gameplay frame immediately
+        app.MainFrame.setSize(boardWidth + 16, boardHeight + 110); // Set the size of the gameplay window
+        app.MainFrame.setLocationRelativeTo(null); // Center the window
+        app.cardLayout.show(app.MainPanel, "pacmangame"); // Show the PacmanGame panel
+
+        // Play the intermission music for 10 seconds
+        if(app.settings.getMusic()!=false){
+        app.settings.playintermissionMusic("./assets/game_sounds/intermission.wav");
+        }
+        // Use a Timer to delay the game start by 10 seconds
+        timer = new Timer(10000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // After 10 seconds, stop the intermission music and start the game
+                app.settings.stopMusic(); // Stop the intermission music
+
+                // Switch to the actual game state
+                Game.setFocusable(true);
+                Game.requestPanelFocus(); // Focus on the game
+                Game.startGame(); // Start the game logic
+            }
+        });
+        timer.setRepeats(false); // Make sure the timer runs only once
+        timer.start();
+
+        // Add a KeyListener to stop the timer, stop the music, and start the game immediately
+        app.MainPanel.getComponent(2).requestFocusInWindow(); 
+        app.MainPanel.getComponent(2).addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                // Stop the timer and the music
+                if (timer != null && timer.isRunning()) {
+                    timer.stop(); // Stop the intermission music timer
+                }
+                app.settings.stopMusic(); // Stop the intermission music
+
+                // Start the game immediately
+                Game.setFocusable(true);
+                Game.requestPanelFocus(); // Focus on the game
+                Game.startGame(); // Start the game logic
+            }
+        });
     }
+}
+
+
 
     private class aboutUs implements ActionListener {
 
@@ -222,5 +274,5 @@ public class FrontInterface extends JPanel {
         });
         return button;
     }
-
+ 
 }
