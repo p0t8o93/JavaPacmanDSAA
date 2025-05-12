@@ -73,6 +73,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     Image orangeGhost_EATEN;
 
     GhostPowers ghostPowers;
+    PacmanAbilities pacmanPowers;
 
     // Wall Textures
     private Image bldg9Wall;
@@ -247,7 +248,8 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
         loadLevel(Level1, bldg9Wall);
         gameLoop = new Timer(32, this);
-
+        
+        
     }
 
     private Image createSolidColorImage(int width, int height, Color color) {
@@ -296,6 +298,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         this.ghostPowers = new GhostPowers(this);
         gameLoop.start();
         // ... (System.out.println messages)
+        
     }
 
     public void loadLevel(String[] mapData, Image wallTexture) {
@@ -362,7 +365,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             ghostPenGridX = columnCount / 2;
             ghostPenGridY = rowCount / 2;
         }
-
+        pacmanPowers = new PacmanAbilities(this, pacman);
     }
 
     @Override
@@ -477,6 +480,8 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             case KeyEvent.VK_D:
                 desiredDirection = Direction.RIGHT;
                 break;
+            case KeyEvent.VK_SPACE:
+                pacmanPowers.activateDash();
             default:
                 return;
         }
@@ -950,12 +955,45 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         if (lives <= 0) {
             gameOver();
         } else {
-            resetGamePositions(); // This will now operate on a list potentially cleared of clones
-            if (pacman != null) {
-                pacman.currentDirection = Direction.RIGHT;
-                pacman.texture = pacmanRight;
+            // --- Display Death Animation ---
+            // Clear ghost textures (if you want them to disappear during the animation)
+            for (Block ghosts : ghosts) { // Assuming 'ghosts' is your collection of ghost objects
+                ghosts.texture = null;
             }
-            pacmanNextDirection = Direction.NONE;
+
+            // Set Pac-Man's texture to the death GIF
+            pacman.texture = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/death.gif")).getImage();
+            gameLoop.stop();
+
+            // --- Schedule the Reset After the Animation ---
+            // Remove the Thread.sleep() and the code that follows it from here
+            // Create a Timer that will execute the reset logic after 1500ms
+            Timer resetTimer = new Timer(1500, new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // This code runs AFTER the 1500ms delay
+                    resetGamePositions(); // This will now operate on a list potentially cleared of clones
+                    gameLoop.start();
+                    if (pacman != null) {
+                        pacman.currentDirection = Direction.RIGHT;
+                        // Assuming pacmanRight is the standard texture
+                        pacman.texture = pacmanRight;
+                    }
+                    pacmanNextDirection = Direction.NONE;
+
+                    // Stop and dispose of the timer after it fires once
+                    ((Timer) e.getSource()).stop();
+                }
+            });
+
+            // Set the timer to only fire once
+            resetTimer.setRepeats(false);
+
+            // Start the timer
+            resetTimer.start();
+
+            // The handlePlayerCaught method finishes executing *immediately* after starting the timer.
+            // The game loop (or EDT) can continue to run, painting the GIF, until the timer fires.
         }
     }
 

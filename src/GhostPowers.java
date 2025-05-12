@@ -204,14 +204,14 @@ public class GhostPowers {
         }
 
         int projSize = pacmanGame.tileSize / 2;
-        int projStartX = redGhost.x_position + (redGhost.width / 2) - (projSize / 2);
-        int projStartY = redGhost.y_position + (redGhost.height / 2) - (projSize / 2);
+        int projStartX = redGhost.x_position;
+        int projStartY = redGhost.y_position;
         projStartX += redGhost.currentDirection.getDx() * (redGhost.width / 2 + projSize / 4);
         projStartY += redGhost.currentDirection.getDy() * (redGhost.height / 2 + projSize / 4);
 
         Projectile projectile = new Projectile(
                 projStartX, projStartY, projSize,
-                redGhost.currentDirection, 6, Color.RED
+                redGhost.currentDirection, 6, Color.RED, pacmanGame
         );
         pacmanGame.addProjectile(projectile);
     }
