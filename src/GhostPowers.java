@@ -1,4 +1,4 @@
-// GhostPowers.java
+    // GhostPowers.java
 
 import java.awt.Image;
 import javax.swing.ImageIcon;
@@ -153,7 +153,7 @@ public class GhostPowers {
         }
     }
 
-// Modify activatePinkGhostPower to use this method when toggling off
+    // Modify activatePinkGhostPower to use this method when toggling off
     public void activatePinkGhostPower() {
         if (pinkGhost == null || !pacmanGame.gameLoop.isRunning()) {
             return;

@@ -31,8 +31,8 @@ public class Bomb {
         this.color = color; // Color for PLACED state (e.g., Yellow)
         this.placedTime = System.currentTimeMillis();
         
-        this.bombTexture = new ImageIcon(getClass().getResource("./assets/game_textures/bomb/bomb.gif")).getImage();
-        this.explosionTexture = new ImageIcon(getClass().getResource("./assets/game_textures/bomb/explosion.png")).getImage();
+        this.bombTexture = new ImageIcon(getClass().getResource("./assets/game_textures/bomb/bomb.GIF")).getImage();
+        this.explosionTexture = new ImageIcon(getClass().getResource("./assets/game_textures/bomb/explosion.gif")).getImage();
     }
 
     public void update() {

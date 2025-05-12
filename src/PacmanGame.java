@@ -127,7 +127,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X  X     X     X  X",
         "X XX0XXX X XXX0XX X",
         "X    X       X    X",
-        "X X XX X X X XX X X",
+        "X X XX XlX X XX X X",
         "X X    X P X    X X",
         "X XXXX XXXXX XXXX X",
         "X0               0X",
@@ -151,7 +151,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X X XX X X X XX X X",
         "X    X X P X X    X",
         "X XX X X X X X XX X",
-        "X X      X      X X",
+        "X X     lX      X X",
         "X X XX XXXXX XX X X",
         "X                 X",
         "XXXXXXXXXXXXXXXXXXX",};
@@ -164,7 +164,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         "X                 X",
         "X XX X XXXXX X XX X",
         "X    X   X   X    X",
-        "XXXX XX  X  XX XXXX",
+        "XXXX XX  X lXX XXXX",
         "---X X       X X---",
         "---X   XXrXX   X---",
         "---X X XbpoX X X---",
@@ -339,7 +339,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
                     Block ghost = new Block(blueGhostLeft, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
-                } else if (mapChar == ' ') {
+                } else if (mapChar == 'l') {
                     Block pellet = new Block(null, c, r, tileSize, tileSize);
                     foods.add(pellet);
                 } else if (mapChar == '0') { // Power Pellet
