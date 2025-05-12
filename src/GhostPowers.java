@@ -1,4 +1,4 @@
-    // GhostPowers.java
+
 
 import java.awt.Image;
 import javax.swing.ImageIcon;
@@ -30,7 +30,7 @@ public class GhostPowers {
         this.pacmanGame = pacmanGameInstance;
 
         // Store references to the canonical ghost textures from PacmanGame
-        this.blueGhostTextureRef = pacmanGameInstance.blueGhostLeft; // Assuming blueGhostImg field in PacmanGame
+        this.blueGhostTextureRef = pacmanGameInstance.blueGhostLeft;
         this.redGhostTextureRef = pacmanGameInstance.redGhostLeft;
         this.pinkGhostTextureRef = pacmanGameInstance.pinkGhostLeft;
         this.orangeGhostTextureRef = pacmanGameInstance.orangeGhostLeft;
@@ -61,19 +61,19 @@ public class GhostPowers {
         // Similar checks for other ghosts can be added.
 
         if (blueGhost != null) {
-            blueTask = new GhostAbilityTask(this::activateBlueGhostPower); // Store the task
+            blueTask = new GhostAbilityTask(this::activateBlueGhostPower, pacmanGameInstance);
             new Thread(blueTask, "BlueGhostAbilityThread").start();
         }
         if (pinkGhost != null) {
-            pinkTask = new GhostAbilityTask(this::activatePinkGhostPower); // Store the task
+            pinkTask = new GhostAbilityTask(this::activatePinkGhostPower, pacmanGameInstance);
             new Thread(pinkTask, "PinkGhostAbilityThread").start();
         }
         if (redGhost != null) {
-            redTask = new GhostAbilityTask(this::activateRedGhostPower, 7000); // Store the task
+            redTask = new GhostAbilityTask(this::activateRedGhostPower, 7000, pacmanGameInstance);
             new Thread(redTask, "RedGhostAbilityThread").start();
         }
         if (orangeGhost != null) {
-            orangeTask = new GhostAbilityTask(this::activateOrangeGhostPower, 10000); // Store the task
+            orangeTask = new GhostAbilityTask(this::activateOrangeGhostPower, 10000, pacmanGameInstance);
             new Thread(orangeTask, "OrangeGhostAbilityThread").start();
         }
     }
@@ -104,10 +104,9 @@ public class GhostPowers {
 
     // Blue's power
     public void activateBlueGhostPower() {
-        if (blueGhost == null || !pacmanGame.gameLoop.isRunning()) {
+        if (blueGhost == null || !pacmanGame.gameLoop.isRunning() || pacmanGame.isPaused) {
             return;
         }
-       pacmanGame.app.settings.blueP("assets/game_sounds/blueP.wav");
 
         // ADD CHECK: Do not activate if frightened or eaten
         if (blueGhost.isFrightened || blueGhost.isEaten) {
@@ -156,10 +155,9 @@ public class GhostPowers {
 
     // Modify activatePinkGhostPower to use this method when toggling off
     public void activatePinkGhostPower() {
-        if (pinkGhost == null || !pacmanGame.gameLoop.isRunning()) {
+        if (pinkGhost == null || !pacmanGame.gameLoop.isRunning() || pacmanGame.isPaused) {
             return;
         }
-        pacmanGame.app.settings.pinkP("assets/game_sounds/pinkP.wav");
         // ... (defensive check and isFrightened/isEaten/isInPenWaiting checks) ...
 
         // If power is toggling from ON to OFF
@@ -196,10 +194,10 @@ public class GhostPowers {
 
     // Red's power: Shoot projectile
     public void activateRedGhostPower() {
-        if (redGhost == null || redGhost.currentDirection == Direction.NONE || !pacmanGame.gameLoop.isRunning()) {
+        if (redGhost == null || redGhost.currentDirection == Direction.NONE || 
+            !pacmanGame.gameLoop.isRunning() || pacmanGame.isPaused) {
             return;
         }
-        pacmanGame.app.settings.redP("assets/game_sounds/redP.wav");
 
         // ADD CHECK: Do not activate if frightened or eaten
         if (redGhost.isFrightened || redGhost.isEaten) {
@@ -221,7 +219,8 @@ public class GhostPowers {
 
     // Orange's power: Drop bomb
     public void activateOrangeGhostPower() {
-        if (orangeGhost == null || orangeGhost.currentDirection == Direction.NONE || !pacmanGame.gameLoop.isRunning()) {
+        if (orangeGhost == null || orangeGhost.currentDirection == Direction.NONE || 
+            !pacmanGame.gameLoop.isRunning() || pacmanGame.isPaused) {
             return;
         }
 
@@ -238,52 +237,61 @@ public class GhostPowers {
                 && !pacmanGame.isWallAtGrid(bombGridX, bombGridY)
                 && !pacmanGame.isBombAtGrid(bombGridX, bombGridY)) {
 
-            Bomb bomb = new Bomb(bombGridX, bombGridY, pacmanGame.tileSize, Color.YELLOW, pacmanGame.app.settings.getSound());
+            Bomb bomb = new Bomb(bombGridX, bombGridY, pacmanGame.tileSize, Color.YELLOW,pacmanGame.app.settings.getSound());
             pacmanGame.addBomb(bomb);
         }
     }
 
     private static class GhostAbilityTask implements Runnable {
-
         private final Runnable abilityAction;
         private final long interval;
-        private volatile boolean running = true; // Add a flag to control the loop
+        private volatile boolean running = true;
+        private final PacmanGame pacmanGame;
+        private long remainingTime;
+        private long lastTickTime;
 
-        public GhostAbilityTask(Runnable action, long intervalMillis) {
+        public GhostAbilityTask(Runnable action, long intervalMillis, PacmanGame game) {
             this.abilityAction = action;
             this.interval = intervalMillis;
+            this.pacmanGame = game;
+            this.remainingTime = intervalMillis;
         }
 
-        public GhostAbilityTask(Runnable action) {
-            this(action, 5000);
+        public GhostAbilityTask(Runnable action, PacmanGame game) {
+            this(action, 5000, game);
         }
 
         @Override
         public void run() {
-            while (running) { // Use the running flag
+            while (running) {
                 try {
-                    Thread.sleep(interval);
-                    if (!running) {
-                        break; // Check flag again after sleep
+                    lastTickTime = System.currentTimeMillis();
+                    Thread.sleep(100); // Check every 100ms
+                    
+                    if (!running) break;
+                    
+                    if (!pacmanGame.isPaused) {
+                        // Only decrease remaining time if not paused
+                        long now = System.currentTimeMillis();
+                        long elapsed = now - lastTickTime;
+                        remainingTime -= elapsed;
+                        
+                        if (remainingTime <= 0) {
+                            if (!pacmanGame.isPaused) {
+                                abilityAction.run();
+                            }
+                            remainingTime = interval; // Reset timer
+                        }
                     }
-                    // It's good practice to also check if pacmanGame and its gameLoop are still valid/running
-                    // This check is mostly done inside the abilityAction methods now.
-                    abilityAction.run();
-
+                    lastTickTime = System.currentTimeMillis(); // Update lastTickTime even when paused
+                    
                 } catch (InterruptedException e) {
                     System.err.println("Ghost ability task interrupted: " + Thread.currentThread().getName());
-                    running = false; // Stop running if interrupted
+                    running = false;
                     Thread.currentThread().interrupt();
-                } catch (NullPointerException npe) {
-                    // This might happen if pacmanGame or a ghost becomes null during shutdown or level transition
-                    System.err.println("NPE in Ghost ability task (" + Thread.currentThread().getName() + "): " + npe.getMessage());
-                    // npe.printStackTrace(); // For more detailed debugging
-                    // Consider whether to stop the thread or log and continue
-                    // running = false; // Optionally stop on NPE
                 } catch (Exception e) {
                     System.err.println("Exception in Ghost ability task: " + Thread.currentThread().getName());
                     e.printStackTrace();
-                    // running = false; // Optionally stop on other exceptions
                 }
             }
             System.out.println("Ghost ability task stopped: " + Thread.currentThread().getName());

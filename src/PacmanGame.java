@@ -1,3 +1,4 @@
+
 // PacmanGame.java
 
 import java.awt.*;
@@ -12,7 +13,7 @@ import java.util.PriorityQueue;
 import java.util.Random;
 import javax.swing.*;
 
-public class PacmanGame extends JPanel implements ActionListener, KeyListener {
+public class PacmanGame extends JPanel implements ActionListener, KeyListener, MouseListener {
 
     int rowCount = 21;
     int columnCount = 19;
@@ -34,6 +35,9 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     Image pacmanLeft;
     Image pacmanUp;
     Image pacmanDown;
+    Image backButtonImage;
+    Rectangle backButtonBounds;
+    Image playButtonImage;
 
     // Ghost Textures
     Image blueGhostLeft; // Renamed to avoid conflict with Block instance
@@ -184,6 +188,17 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     final int GHOST_PEN_WAIT_DURATION = 2000;
 
+    // Pause Button
+    private Image pauseButtonImage;
+    private Rectangle pauseButtonBounds;
+    boolean isPaused = false;
+
+    // Add field to track remaining energizer time when paused
+    private int remainingEnergizerTime = 0;
+
+    // Add field to track when energizer started
+    private long energizerStartTime;
+
     public PacmanGame(App app) {
         activeProjectiles = new ArrayList<>();
         activeBombs = new ArrayList<>();
@@ -200,6 +215,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         this.app = app;
         setPreferredSize(new Dimension(boardWidth, boardHeight));
         addKeyListener(this);
+        addMouseListener(this);
         setFocusable(true);
         setBackground(Color.BLACK);
 
@@ -246,6 +262,15 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         activeProjectiles = new ArrayList<>();
         activeBombs = new ArrayList<>();
 
+        // Load pause button image
+        pauseButtonImage = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/Pause_Button.png")).getImage();
+        playButtonImage = new ImageIcon(getClass().getResource("./assets/game_textures/pacman/play.png")).getImage();
+        pauseButtonBounds = new Rectangle(boardWidth - 60, boardHeight + 15, 30, 30); // Moved below board height
+
+        // Load back button image
+        backButtonImage = new ImageIcon(getClass().getResource("./assets/ui_graphics/Back.png")).getImage();
+        backButtonBounds = new Rectangle(boardWidth - 90, 10, 70, 40);
+
         loadLevel(Level1, bldg9Wall);
         gameLoop = new Timer(32, this);
         
@@ -288,17 +313,20 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         activeProjectiles.clear();
         activeBombs.clear();
         deactivateEnergizer(); // Ensure energizer is off at the start
-        if (ghostPowers != null) { // If GhostPowers uses threads, ensure they are managed
-            // ghostPowers.stopAbilities(); // You'd need to implement this in GhostPowers
-        }
-        if (this.ghostPowers != null) {
-            System.out.println("Stopping existing GhostPowers threads...");
-            this.ghostPowers.stopAllAbilityThreads(); // <<<< ADD THIS CALL
-        }
-        this.ghostPowers = new GhostPowers(this);
-        gameLoop.start();
-        // ... (System.out.println messages)
         
+        // Only create new ghost powers if they don't exist or game is not paused
+        if (this.ghostPowers == null || !isPaused) {
+            if (this.ghostPowers != null) {
+                System.out.println("Stopping existing GhostPowers threads...");
+                this.ghostPowers.stopAllAbilityThreads();
+            }
+            this.ghostPowers = new GhostPowers(this);
+        } else {
+            // If game is paused, just recalculate ghost references
+            this.ghostPowers.recalculateGhosts();
+        }
+        
+        gameLoop.start();
     }
 
     public void loadLevel(String[] mapData, Image wallTexture) {
@@ -418,6 +446,32 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         }
         for (Projectile projectile : activeProjectiles) {
             projectile.draw(g2d);
+        }
+
+        // Draw pause/play button
+        if (isPaused) {
+            g2d.drawImage(playButtonImage, pauseButtonBounds.x, pauseButtonBounds.y, pauseButtonBounds.width, pauseButtonBounds.height, this);
+            
+            // Dim background
+            Composite original = g2d.getComposite();
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            g2d.setColor(Color.BLACK);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+            g2d.setComposite(original);
+
+            // Draw "PAUSED" text
+            g2d.setColor(Color.WHITE);
+            Font pauseFont = new Font("Arial", Font.BOLD, 48);
+            g2d.setFont(pauseFont);
+            FontMetrics fm = g2d.getFontMetrics();
+            String pausedText = "PAUSED";
+            int textX = (getWidth() - fm.stringWidth(pausedText)) / 2;
+            g2d.drawString(pausedText, textX, getHeight() / 2);
+
+            // Draw back button
+            g2d.drawImage(backButtonImage, backButtonBounds.x, backButtonBounds.y, backButtonBounds.width, backButtonBounds.height, this);
+        } else {
+            g2d.drawImage(pauseButtonImage, pauseButtonBounds.x, pauseButtonBounds.y, pauseButtonBounds.width, pauseButtonBounds.height, this);
         }
 
         // Draw Score/Lives UI
@@ -601,7 +655,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     }
 
     private void updateGame() {
-        if (pacman == null) {
+        if (pacman == null || isPaused) {
             return;
         }
 
@@ -873,9 +927,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
             if (collision(pacman, ghost)) {
                 if (energizerActive && ghost.isFrightened && !ghost.isEaten) {
-                  app.settings.playghostSFX();
                     eatGhost(ghost);
-                    app.settings.playGoBackSFX();
                 } else if (!ghost.isEaten) { // Don't get caught by already eaten ghosts
                     handlePlayerCaught();
                     return;
@@ -913,7 +965,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         if (!ghost.isFrightened || ghost.isEaten || ghost.isInPenWaiting) {
             return;
         }
-        
+
         score += (200 * eatenGhostScoreMultiplier); // Adjusted base score
         eatenGhostScoreMultiplier *= 2;
         if (eatenGhostScoreMultiplier > 8) {
@@ -934,15 +986,15 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
             ghost.texture = orangeGhost_EATEN;
         } else {
             // Fallback to a common eaten texture
-            ghost.texture = this.ghostEatenTexture; 
+            ghost.texture = this.ghostEatenTexture; // Your existing common one
         }
-      
+        // If you only have one common eaten texture, this simplifies to:
+        // ghost.texture = commonEatenTexture; // (or this.ghostEatenTexture)
 
         ghost.isMoving = false; // Force re-evaluation of path to pen
     }
 
     private void handlePlayerCaught() {
-        app.settings.pacmandeath("assets/game_sounds/death.wav");
         lives--;
         deactivateEnergizer();
         activeProjectiles.clear();
@@ -1013,7 +1065,6 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         if (foodEaten != null) {
             foods.remove(foodEaten);
             score += 10;
-            app.settings.playPelletSFX();
             // System.out.println("Score: " + score); 
         }
     }
@@ -1031,8 +1082,6 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         }
         if (ppEaten != null) {
             powerPellets.remove(ppEaten);
-            app.settings.playPpelletSFX();
-            app.settings.playvulnerableSFX();
             score += 50; // Score for power pellet
             activateEnergizer();
             System.out.println("Power Pellet Eaten! Score: " + score);
@@ -1041,13 +1090,14 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
 
     private void activateEnergizer() {
         energizerActive = true;
-        eatenGhostScoreMultiplier = 1; // Reset for the 200,400,800,1600 sequence
+        eatenGhostScoreMultiplier = 1;
         for (Block ghost : ghosts) {
-            if (!ghost.isEaten) { // Don't affect already eaten ghosts
+            if (!ghost.isEaten) {
                 setGhostFrightened(ghost);
             }
         }
-        energizerTimer.restart(); // Start/restart the countdown
+        energizerTimer.restart();
+        energizerStartTime = System.currentTimeMillis(); // Record start time
         System.out.println("Energizer ACTIVE!");
     }
 
@@ -1084,9 +1134,10 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
     private void deactivateEnergizer() {
         energizerActive = false;
         eatenGhostScoreMultiplier = 1;
+        remainingEnergizerTime = 0;
         for (Block ghost : ghosts) {
-            if (!ghost.isEaten) { // Only revert ghosts that are not currently "eyes"
-                setGhostNormal(ghost, false); // false = don't reverse, just revert state
+            if (!ghost.isEaten) {
+                setGhostNormal(ghost, false);
             }
         }
         if (energizerTimer.isRunning()) {
@@ -1205,7 +1256,6 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         app.MainFrame.setLocationRelativeTo(null);
         app.gameOverPanel.setScore(score);
         app.cardLayout.show(app.MainPanel, "gameover");
-        app.settings.playGameOver("assets/game_sounds/gameover.wav");
     }
 
     public boolean isWallAtGrid(int gridX, int gridY) {
@@ -1417,5 +1467,65 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener {
         }
 
         return Direction.NONE; // Should not happen if path is valid
+    }
+
+    // Add mouse listener methods
+    @Override
+    public void mousePressed(MouseEvent e) {
+        Point p = e.getPoint();
+        if (pauseButtonBounds.contains(p)) {
+            isPaused = !isPaused; // Toggle pause state
+            if (isPaused) {
+                // Pause music
+                if (app.settings.getClip() != null && app.settings.getClip().isRunning()) {
+                    app.settings.getClip().stop();
+                }
+                // Pause energizer timer if active
+                if (energizerTimer != null && energizerTimer.isRunning()) {
+                    remainingEnergizerTime = energizerTimer.getDelay() - (int)(System.currentTimeMillis() - energizerStartTime);
+                    energizerTimer.stop();
+                }
+            } else {
+                // Resume music
+                if (app.settings.getClip() != null && !app.settings.getClip().isRunning() && app.settings.getMusic()) {
+                    app.settings.getClip().start();
+                }
+                // Resume energizer timer if it was active
+                if (energizerActive && remainingEnergizerTime > 0) {
+                    energizerTimer.setInitialDelay(remainingEnergizerTime);
+                    energizerTimer.restart();
+                    energizerStartTime = System.currentTimeMillis(); // Reset the start time
+                }
+            }
+        } else if (isPaused && backButtonBounds.contains(p)) {
+            isPaused = false;
+            remainingEnergizerTime = 0; // Reset energizer time
+            deactivateEnergizer(); // Make sure to deactivate energizer when going back
+            if (ghostPowers != null) {
+                ghostPowers.stopAllAbilityThreads(); // Stop ghost power threads before resetting
+            }
+            resetGame();
+            app.MainFrame.setSize(680, 747);
+            app.MainFrame.setLocationRelativeTo(null);
+            app.cardLayout.show(app.MainPanel, "frontinterface");
+        }
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {}
+
+    @Override
+    public void mouseReleased(MouseEvent e) {}
+
+    @Override
+    public void mouseEntered(MouseEvent e) {}
+
+    @Override
+    public void mouseExited(MouseEvent e) {}
+
+    // Add method to unpause the game
+    public void unpause() {
+        isPaused = false;
+        repaint();
     }
 }
