@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List; // Import List
 import java.util.PriorityQueue;
 import java.util.Random;
+import java.util.Set;
 import javax.swing.*;
 
 public class PacmanGame extends JPanel implements ActionListener, KeyListener, MouseListener {
@@ -908,58 +909,69 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
     }
 
     private void checkCollisions() {
-        if (pacman == null) {
-            return;
-        }
-        Rectangle pacmanBounds = new Rectangle(pacman.x_position, pacman.y_position, pacman.width, pacman.height);
+    if (pacman == null) {
+        return;
+    }
+    Rectangle pacmanBounds = new Rectangle(pacman.x_position, pacman.y_position, pacman.width, pacman.height);
 
-        // Pacman vs Ghost Collision
-        Iterator<Block> ghostIterator = ghosts.iterator(); // Use iterator for safe removal during iteration if needed
-        while (ghostIterator.hasNext()) {
-            Block ghost = ghostIterator.next();
-            if (ghost.texture == null && !ghost.isFrightened && !ghost.isEaten) { // e.g. Blue ghost power active
-                if (ghostPowers.blueGhost == ghost && collision(pacman, ghost)) { // Special check for invisible blue
-                    handlePlayerCaught();
-                    return;
-                }
-                continue; // Skip collision check if texture is null (and not frightened/eaten)
-            }
+    // ... (Pacman vs Ghost collision - keep as is) ...
+     Iterator<Block> ghostIterator = ghosts.iterator();
+     while (ghostIterator.hasNext()) {
+         Block ghost = ghostIterator.next();
+         // ... (ghost collision logic) ...
+         if (collision(pacman, ghost)) {
+             if (energizerActive && ghost.isFrightened && !ghost.isEaten) {
+                 eatGhost(ghost);
+             } else if (!ghost.isEaten && !ghost.isInPenWaiting) { // Check not waiting too
+                 // Check if blue ghost is invisible and not frightened
+                 boolean blueIsEffectivelyInvisible = false;
+                 if (ghostPowers != null && ghost == ghostPowers.blueGhost && ghostPowers.boolBlueInvis && !ghost.isFrightened) {
+                     blueIsEffectivelyInvisible = true;
+                 }
 
-            if (collision(pacman, ghost)) {
-                if (energizerActive && ghost.isFrightened && !ghost.isEaten) {
-                    eatGhost(ghost);
-                } else if (!ghost.isEaten) { // Don't get caught by already eaten ghosts
+                 // Only get caught if the ghost is visible or it's the invisible blue ghost
+                 if (ghost.texture != null || blueIsEffectivelyInvisible) {
                     handlePlayerCaught();
-                    return;
-                }
-            }
+                    return; // Exit collision check immediately
+                 }
+             }
+         }
+     }
+
+
+    // ... (Pacman vs Projectile collision - keep as is) ...
+    Iterator<Projectile> projIterator = activeProjectiles.iterator();
+    while (projIterator.hasNext()) {
+        Projectile p = projIterator.next();
+        if (p.isActive && pacmanBounds.intersects(p.getBounds())) {
+            p.isActive = false; // Mark projectile as inactive
+            projIterator.remove(); // Remove projectile
+            handlePlayerCaught();
+            return; // Exit collision check immediately
         }
-        // ... (Pacman vs Projectile, Pacman vs Bomb - unchanged) ...
-        Iterator<Projectile> projIterator = activeProjectiles.iterator();
-        while (projIterator.hasNext()) {
-            Projectile p = projIterator.next();
-            if (p.isActive && pacmanBounds.intersects(p.getBounds())) {
-                p.isActive = false;
-                handlePlayerCaught();
-                return;
-            }
-        }
-        for (Bomb bomb : activeBombs) {
-            if (bomb.state == Bomb.BombState.EXPLODING) {
-                int[][] DIRS = {{0, 0}, {0, -1}, {0, 1}, {-1, 0}, {1, 0}};
-                for (int[] d : DIRS) {
-                    int ex = bomb.X_GridPosition + d[0];
-                    int ey = bomb.Y_GridPosition + d[1];
-                    if (ex >= 0 && ex < columnCount && ey >= 0 && ey < rowCount && !isWallAtGrid(ex, ey)) {
-                        if (pacmanBounds.intersects(bomb.getExplosionCellBounds(ex, ey))) {
-                            handlePlayerCaught();
-                            return;
-                        }
-                    }
+    }
+
+    // --- Pacman vs Bomb Explosion Collision (UPDATED) ---
+    for (Bomb bomb : activeBombs) {
+        if (bomb.state == Bomb.BombState.EXPLODING) {
+            // Get the set of cells affected by this bomb's explosion
+            // Pass 'this' (the PacmanGame instance) for wall checking
+            Set<Point> explosionCells = bomb.getAffectedCells(this);
+
+            // Check if Pacman intersects with any of the explosion cells
+            for (Point cell : explosionCells) {
+                // Get the bounds for the current explosion cell
+                Rectangle explosionCellBounds = bomb.getExplosionCellBounds(cell.x, cell.y); // Use existing helper
+
+                // Check for intersection
+                if (pacmanBounds.intersects(explosionCellBounds)) {
+                    handlePlayerCaught();
+                    return; // Pacman caught, exit collision check immediately
                 }
             }
         }
     }
+}
 
     private void eatGhost(Block ghost) {
         if (!ghost.isFrightened || ghost.isEaten || ghost.isInPenWaiting) {
