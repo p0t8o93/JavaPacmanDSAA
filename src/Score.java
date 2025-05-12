@@ -184,6 +184,8 @@ public class Score extends JPanel {
                 app.MainFrame.setSize(680, 747);
                 app.MainFrame.setLocationRelativeTo(null);
                 app.cardLayout.show(app.MainPanel, "frontinterface");
+                app.settings.stopGameOver();
+                app.settings.playLobbyMusic("assets/game_sounds/Loby music.wav");
             }
         });
 

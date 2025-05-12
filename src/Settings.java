@@ -49,14 +49,16 @@ public class Settings extends JPanel {
         musicButton.setBorderPainted(false);
         musicButton.setContentAreaFilled(false);
         musicButton.setFocusPainted(false);
-        
         musicButton.addActionListener(e -> {
+            buttonSFX();
             musicOn = !musicOn;
             musicButton.setIcon(musicOn ? musicOnIcon : musicOffIcon);
             if (musicOn) {
+
                 playLobbyMusic("assets/game_sounds/Loby music.wav");
             } else {
                 stopMusic();
+
             }
         });
         add(musicButton);
@@ -67,6 +69,7 @@ public class Settings extends JPanel {
         soundButton.setContentAreaFilled(false);
         soundButton.setFocusPainted(false);
         soundButton.addActionListener(e -> {
+            buttonSFX();
             soundOn = !soundOn;
             soundButton.setIcon(soundOn ? soundOnIcon : soundOffIcon);
         });
@@ -161,5 +164,352 @@ public class Settings extends JPanel {
 
     public boolean getMusic() {
         return musicOn;
+    }
+
+    public boolean getSound() {
+        return soundOn;
+    }
+
+    private Clip pelletClip;
+
+    public void loadpelletSFX(String relativePath) {
+        try {
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            pelletClip = AudioSystem.getClip();
+            pelletClip.open(audioInput);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void playPelletSFX() {
+        if (soundOn == false) {
+            return;
+        }
+        if (pelletClip == null) {
+            return;
+        }
+
+        if (pelletClip.isRunning()) {
+            pelletClip.stop();
+
+            loadpelletSFX("assets/game_sounds/eat_pellet.wav");
+
+        }
+        pelletClip.setFramePosition(1);
+        pelletClip.start();
+    }
+    private Clip PpelletClip;
+
+    public void loadPpelletSFX(String relativePath) {
+        try {
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            PpelletClip = AudioSystem.getClip();
+            PpelletClip.open(audioInput);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void playPpelletSFX() {
+        if (soundOn == false) {
+            return;
+        }
+        if (PpelletClip == null) {
+            return;
+        }
+
+        if (PpelletClip.isRunning()) {
+            PpelletClip.stop();
+
+            loadPpelletSFX("assets/game_sounds/eat_Ppellet.wav");
+
+        }
+        PpelletClip.setFramePosition(1);
+        PpelletClip.start();
+    }
+
+    private Clip ghostVulnerable;
+
+    public void loadVulnerableSFX(String relativePath) {
+        try {
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            ghostVulnerable = AudioSystem.getClip();
+            ghostVulnerable.open(audioInput);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void playvulnerableSFX() {
+        if (soundOn == false) {
+            return;
+        }
+        if (ghostVulnerable == null) {
+            return;
+        }
+
+        if (ghostVulnerable.isRunning()) {
+            ghostVulnerable.stop();
+
+            loadVulnerableSFX("assets/game_sounds/vulnerable.wav");
+
+        }
+        ghostVulnerable.setFramePosition(1);
+        ghostVulnerable.start();
+    }
+
+    private Clip ghostClip;
+
+    public void loadghostSFX(String relativePath) {
+        try {
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            ghostClip = AudioSystem.getClip();
+            ghostClip.open(audioInput);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void playghostSFX() {
+        if (soundOn == false) {
+            return;
+        }
+        if (ghostClip == null) {
+            return;
+        }
+
+        if (ghostClip.isRunning()) {
+            ghostClip.stop();
+
+            loadghostSFX("assets/game_sounds/eat_ghost.wav");
+
+        }
+        ghostClip.setFramePosition(1);
+        ghostClip.start();
+    }
+
+    private Clip gobackClip;
+
+    public void loadBackSFX(String relativePath) {
+        try {
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            gobackClip = AudioSystem.getClip();
+            gobackClip.open(audioInput);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void playGoBackSFX() {
+        if (soundOn == false) {
+            return;
+        }
+        if (gobackClip == null) {
+            return;
+        }
+
+        if (gobackClip.isRunning()) {
+            gobackClip.stop();
+
+            loadBackSFX("assets/game_sounds/goback.wav");
+
+        }
+        gobackClip.setFramePosition(1);
+        gobackClip.start();
+    }
+    private Clip pacmanDeath;
+
+    public void pacmandeath(String relativePath) {
+        if (soundOn == false) {
+            return;
+        }
+        try {
+            if (pacmanDeath != null && pacmanDeath.isRunning()) {
+                return; // Avoid restarting
+            }
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            pacmanDeath = AudioSystem.getClip();
+            pacmanDeath.open(audioInput);
+            pacmanDeath.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Clip buttonsnd;
+
+    public void loadbuttonsnd(String relativePath) {
+        try {
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            buttonsnd = AudioSystem.getClip();
+            buttonsnd.open(audioInput);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void buttonSFX() {
+        if (soundOn == false) {
+            return;
+        }
+        if (buttonsnd == null) {
+            return;
+        }
+
+        if (buttonsnd.isRunning()) {
+            buttonsnd.stop();
+
+            loadghostSFX("assets/game_sounds/eat_ghost.wav");
+
+        }
+        buttonsnd.setFramePosition(1);
+        buttonsnd.start();
+    }
+    private Clip GameOverSFX;
+
+    public void playGameOver(String relativePath) {
+        try {
+            if (soundOn == false) {
+                return;
+            }
+            if (GameOverSFX != null && GameOverSFX.isRunning()) {
+                return; // Avoid restarting
+            }
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            GameOverSFX = AudioSystem.getClip();
+            GameOverSFX.open(audioInput);
+            GameOverSFX.loop(Clip.LOOP_CONTINUOUSLY);
+            GameOverSFX.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void stopGameOver() {
+        if (GameOverSFX != null && GameOverSFX.isRunning()) {
+            GameOverSFX.stop();
+            GameOverSFX.close();
+        }
+    }
+    private Clip redP;
+
+    public void redP(String relativePath) {
+        try {
+            if (soundOn == false) {
+                return;
+            }
+            if (redP != null && redP.isRunning()) {
+                return; // Avoid restarting
+            }
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            redP = AudioSystem.getClip();
+            redP.open(audioInput);
+            redP.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+    private Clip blueP;
+
+    public void blueP(String relativePath) {
+        try {
+            if (soundOn == false) {
+                return;
+            }
+            if (blueP != null && blueP.isRunning()) {
+                return; // Avoid restarting
+            }
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            blueP = AudioSystem.getClip();
+            blueP.open(audioInput);
+            blueP.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+    private Clip pinkP;
+
+    public void pinkP(String relativePath) {
+        try {
+            if (soundOn == false) {
+                return;
+            }
+            if (pinkP != null && pinkP.isRunning()) {
+                return; // Avoid restarting
+            }
+            URL soundURL = getClass().getClassLoader().getResource(relativePath);
+            if (soundURL == null) {
+                System.out.println("Could not find file: " + relativePath);
+                return;
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundURL);
+            pinkP = AudioSystem.getClip();
+            pinkP.open(audioInput);
+            pinkP.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
     }
 }

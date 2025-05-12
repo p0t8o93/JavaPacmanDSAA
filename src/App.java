@@ -9,6 +9,7 @@ public class App {
     GameOverPanel gameOverPanel;
     Score scorePanel;
     public Settings settings;
+    
 
     public App() {
         MainFrame = new JFrame("Moeka the TIPIAN Ghost Hunter");
@@ -16,33 +17,38 @@ public class App {
         MainPanel = new JPanel();
         MainPanel.setLayout(cardLayout);
 
-        // Initialize panels
+        // Initialize the JPanel Classes here of the different Interfaces
         JPanel Instructions = new Instructions(this);
         JPanel PacmanGame = new PacmanGame(this);
         JPanel FrontInterface = new FrontInterface(this, (PacmanGame) PacmanGame);
         JPanel AboutUs = new AboutUsPanel(this);
-        gameOverPanel = new GameOverPanel(this);
-        scorePanel = new Score(this);
+        gameOverPanel = new GameOverPanel(this); // Game Over Panel
+        scorePanel = new Score(this); // Score Panel
         JPanel Leaderboard = new Leaderboard(this);
-        
-        // Create Settings panel
         settings  = new Settings(this);
-
-        // Add panels to card layout
+        
+        // Adding the JPanels to the main panel for switching different
+        // interfaces. (Name)           (keyword)
         MainPanel.add(FrontInterface, "frontinterface");
         MainPanel.add(Instructions, "instructions");
         MainPanel.add(PacmanGame, "pacmangame");
         MainPanel.add(AboutUs, "aboutus");
-        MainPanel.add(gameOverPanel, "gameover");
+        MainPanel.add(gameOverPanel, "gameover");  
         MainPanel.add(scorePanel, "score");
-        MainPanel.add(Leaderboard, "leaderboard");
+        MainPanel.add(Leaderboard,"leaderboard");
         MainPanel.add(settings, "settings");
+        
+        settings.playLobbyMusic("assets/game_sounds/Loby music.wav");
+          settings.loadpelletSFX("assets/game_sounds/eat_pellet.wav");
+          settings.loadPpelletSFX("assets/game_sounds/eat_Ppellet.wav");
+          settings.loadghostSFX("assets/game_sounds/eat_ghost.wav");
+          settings.loadbuttonsnd("assets/game_sounds/button.wav");
+          settings.loadVulnerableSFX("assets/game_sounds/vulnerable.wav");
+          settings.loadBackSFX("assets/game_sounds/goback.wav");
+          
 
-        // ✅Automatically play lobby music at game start
-        settings.playLobbyMusic("assets/game_sounds/Loby music.wav"); // Ensure the path is correct
-
-        // Frame setup
         MainFrame.getContentPane().add(MainPanel);
+        //MainFrame.setSize(960,540);
         MainFrame.setSize(680, 747);
         MainFrame.setLocationRelativeTo(null);
         MainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -50,6 +56,6 @@ public class App {
     }
 
     public static void main(String[] args) {
-        new App();
+        App app = new App();
     }
 }

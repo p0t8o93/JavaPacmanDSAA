@@ -206,11 +206,13 @@ private class PlayGame implements ActionListener {
                 // Switch to the actual game state
                 Game.setFocusable(true);
                 Game.requestPanelFocus(); // Focus on the game
-                Game.startGame(); // Start the game logic
+                 // Start the game logic
             }
         });
         timer.setRepeats(false); // Make sure the timer runs only once
         timer.start();
+        Game.startGame();
+        
 
         // Add a KeyListener to stop the timer, stop the music, and start the game immediately
         app.MainPanel.getComponent(2).requestFocusInWindow(); 
@@ -226,9 +228,10 @@ private class PlayGame implements ActionListener {
                 // Start the game immediately
                 Game.setFocusable(true);
                 Game.requestPanelFocus(); // Focus on the game
-                Game.startGame(); // Start the game logic
+                 // Start the game logic
             }
         });
+        
     }
 }
 

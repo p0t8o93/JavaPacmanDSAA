@@ -197,7 +197,7 @@ public class Leaderboard extends JPanel {
         }
     }
 
-    private static final String GET_TOP_SCORES_SQL = "SELECT name, score FROM leaderboard LIMIT ?";
+    private static final String GET_TOP_SCORES_SQL = "SELECT name, score FROM leaderboard ORDER BY score DESC LIMIT ?";
 
 //     Get the top N scores from the leaderboard and sort them using Quick Sort
     public ArrayList<TopScore> getTopScores(int n) {
