@@ -133,7 +133,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         "X  X     X     X  X",
         "X XX0XXX X XXX0XX X",
         "X    X       X    X",
-        "X X XX XlX X XX X X",
+        "X X XX X X X XX X X",
         "X X    X P X    X X",
         "X XXXX XXXXX XXXX X",
         "X0               0X",
@@ -141,7 +141,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
 
     private String[] Level2 = {
         "XXXXXXXXXXXXXXXXXXX",
-        "X                 X",
+        "X0               0X",
         "X X XX XXXXX XX X X",
         "X X  X   X   X  X X",
         "X XX X X X X X XX X",
@@ -149,34 +149,34 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         "X XX X XXXXX X XX X",
         "X XX X       X XX X",
         "X XX X XXrXX X XX X",
-        "       XbpoX      X",
+        "0      XbpoX     0X",
         "X X XX XXXXX XX X X",
-        "X X             X X",
+        "X X      0      X X",
         "X XX X XXXXX X XX X",
         "X X  X   X   X  X X",
         "X X XX X X X XX X X",
-        "X    X X P X X    X",
+        "X0   X X P X X   0X",
         "X XX X X X X X XX X",
-        "X X     lX      X X",
+        "X X      X      X X",
         "X X XX XXXXX XX X X",
-        "X                 X",
+        "X0               0X",
         "XXXXXXXXXXXXXXXXXXX",};
 
     private String[] Level3 = {
         "XXXXXXXXXXXXXXXXXXX",
-        "X        X        X",
+        "X0       X       0X",
         "X XX XXX X XXX XX X",
         "X XX XXX X XXX XX X",
-        "X                 X",
+        "X        0        X",
         "X XX X XXXXX X XX X",
-        "X    X   X   X    X",
-        "XXXX XX  X lXX XXXX",
+        "X0   X   X   X   0X",
+        "XXXX XX  X  XX XXXX",
         "---X X       X X---",
         "---X   XXrXX   X---",
         "---X X XbpoX X X---",
         "---X X XXXXX X X---",
         "---X X       X X---",
-        "---X   X X X   X---", // Assuming 'O' is a typo and meant to be food or empty space as it's not handled.
+        "---X 0 X X X 0 X---", // Assuming 'O' is a typo and meant to be food or empty space as it's not handled.
         // If 'O' is special, its handling should be added in loadLevel.
         // For now, it will be treated as an empty space.
         "---X XXX X XXX X---",
@@ -184,7 +184,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         "---X X XXXXX X X---",
         "---X X   X   X X---",
         "---XXXXX X XXXXX---",
-        "---X           X---",
+        "---X0         0X---",
         "---XXXXXXXXXXXXX---",};
 
     final int GHOST_PEN_WAIT_DURATION = 2000;
@@ -371,7 +371,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
                     Block ghost = new Block(blueGhostLeft, c, r, tileSize, tileSize);
                     ghost.isGhost = true;
                     ghosts.add(ghost);
-                } else if (mapChar == 'l') {
+                } else if (mapChar == ' ') {
                     Block pellet = new Block(null, c, r, tileSize, tileSize);
                     foods.add(pellet);
                 } else if (mapChar == '0') { // Power Pellet
@@ -932,6 +932,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
                  // Only get caught if the ghost is visible or it's the invisible blue ghost
                  if (ghost.texture != null || blueIsEffectivelyInvisible) {
                     handlePlayerCaught();
+                    app.settings.pacmandeath("assets/game_sounds/death.wav");
                     return; // Exit collision check immediately
                  }
              }
@@ -980,6 +981,8 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
 
         score += (200 * eatenGhostScoreMultiplier); // Adjusted base score
         eatenGhostScoreMultiplier *= 2;
+        app.settings.playghostSFX();
+       app.settings. playGoBackSFX();
         if (eatenGhostScoreMultiplier > 8) {
             eatenGhostScoreMultiplier = 8; // Max 1600
         }
@@ -1076,6 +1079,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         }
         if (foodEaten != null) {
             foods.remove(foodEaten);
+            app.settings.playPelletSFX();
             score += 10;
             // System.out.println("Score: " + score); 
         }
@@ -1094,6 +1098,8 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         }
         if (ppEaten != null) {
             powerPellets.remove(ppEaten);
+            app.settings.playPpelletSFX();
+            app.settings.playvulnerableSFX();
             score += 50; // Score for power pellet
             activateEnergizer();
             System.out.println("Power Pellet Eaten! Score: " + score);
@@ -1245,7 +1251,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         deactivateEnergizer(); // Make sure energizer is off
     }
 
-    private void resetGame() {
+    public void resetGame() {
         // ... (resetGame - full game reset, ensures energizer off) ...
         lives = 3;
         score = 0;
@@ -1268,6 +1274,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         app.MainFrame.setLocationRelativeTo(null);
         app.gameOverPanel.setScore(score);
         app.cardLayout.show(app.MainPanel, "gameover");
+        app.settings.playGameOver("assets/game_sounds/gameover.wav");
     }
 
     public boolean isWallAtGrid(int gridX, int gridY) {

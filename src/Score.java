@@ -42,6 +42,7 @@ public class Score extends JPanel {
 
     private Image backgroundGif;
     private App app; // Reference to the main menu
+    private PacmanGame currgame;
     int BGgifWidth = 624;
     int BGgifHeight = 692;
     int pacmoeHeight = 90;
@@ -61,8 +62,9 @@ public class Score extends JPanel {
     Image icecream, burger, fries, peach, continue_text, inputname, bar, scorec;
     private Font PixelFont;
 
-    public Score(App mainMenu) {
+    public Score(App mainMenu, PacmanGame currgame) {
         this.app = mainMenu;
+        this.currgame=currgame;
         setLayout(null); // Absolute positioning
 
         try {
@@ -180,7 +182,7 @@ public class Score extends JPanel {
                 } else {
                     JOptionPane.showMessageDialog(app.MainFrame, "Please enter a valid name.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
-
+             currgame.resetGame();
                 app.MainFrame.setSize(680, 747);
                 app.MainFrame.setLocationRelativeTo(null);
                 app.cardLayout.show(app.MainPanel, "frontinterface");
