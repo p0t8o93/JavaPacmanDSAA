@@ -107,6 +107,7 @@ public class GhostPowers {
         if (blueGhost == null || !pacmanGame.gameLoop.isRunning() || pacmanGame.isPaused) {
             return;
         }
+        pacmanGame.app.settings.blueP("assets/game_sounds/blueP.wav");
 
         // ADD CHECK: Do not activate if frightened or eaten
         if (blueGhost.isFrightened || blueGhost.isEaten) {
@@ -158,6 +159,7 @@ public class GhostPowers {
         if (pinkGhost == null || !pacmanGame.gameLoop.isRunning() || pacmanGame.isPaused) {
             return;
         }
+         pacmanGame.app.settings.pinkP("assets/game_sounds/pinkP.wav");
         // ... (defensive check and isFrightened/isEaten/isInPenWaiting checks) ...
 
         // If power is toggling from ON to OFF
@@ -198,6 +200,7 @@ public class GhostPowers {
             !pacmanGame.gameLoop.isRunning() || pacmanGame.isPaused) {
             return;
         }
+         pacmanGame.app.settings.redP("assets/game_sounds/redP.wav");
 
         // ADD CHECK: Do not activate if frightened or eaten
         if (redGhost.isFrightened || redGhost.isEaten) {

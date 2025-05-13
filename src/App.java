@@ -8,6 +8,7 @@ public class App {
     CardLayout cardLayout;
     GameOverPanel gameOverPanel;
     Score scorePanel;
+    PacmanGame currgame;
     public Settings settings;
     
 
@@ -19,11 +20,11 @@ public class App {
 
         // Initialize the JPanel Classes here of the different Interfaces
         JPanel Instructions = new Instructions(this);
-        JPanel PacmanGame = new PacmanGame(this);
-        JPanel FrontInterface = new FrontInterface(this, (PacmanGame) PacmanGame);
+        currgame = new PacmanGame(this);
+        JPanel FrontInterface = new FrontInterface(this, (PacmanGame) currgame);
         JPanel AboutUs = new AboutUsPanel(this);
         gameOverPanel = new GameOverPanel(this); // Game Over Panel
-        scorePanel = new Score(this); // Score Panel
+        scorePanel = new Score(this,currgame); // Score Panel
         JPanel Leaderboard = new Leaderboard(this);
         settings  = new Settings(this);
         
@@ -31,7 +32,7 @@ public class App {
         // interfaces. (Name)           (keyword)
         MainPanel.add(FrontInterface, "frontinterface");
         MainPanel.add(Instructions, "instructions");
-        MainPanel.add(PacmanGame, "pacmangame");
+        MainPanel.add(currgame, "pacmangame");
         MainPanel.add(AboutUs, "aboutus");
         MainPanel.add(gameOverPanel, "gameover");  
         MainPanel.add(scorePanel, "score");
