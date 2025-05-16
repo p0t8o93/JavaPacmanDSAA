@@ -202,7 +202,7 @@ public class Settings extends JPanel {
             loadpelletSFX("assets/game_sounds/eat_pellet.wav");
 
         }
-        pelletClip.setFramePosition(1);
+        pelletClip.setFramePosition(0);
         pelletClip.start();
     }
     private Clip PpelletClip;

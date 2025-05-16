@@ -10,6 +10,7 @@ public class App {
     Score scorePanel;
     PacmanGame currgame;
     public Settings settings;
+    GameComplete gamecomplete;
     
 
     public App() {
@@ -27,6 +28,7 @@ public class App {
         scorePanel = new Score(this,currgame); // Score Panel
         JPanel Leaderboard = new Leaderboard(this);
         settings  = new Settings(this);
+         gamecomplete= new GameComplete(this);
         
         // Adding the JPanels to the main panel for switching different
         // interfaces. (Name)           (keyword)
@@ -38,6 +40,7 @@ public class App {
         MainPanel.add(scorePanel, "score");
         MainPanel.add(Leaderboard,"leaderboard");
         MainPanel.add(settings, "settings");
+        MainPanel.add(gamecomplete, "gameComplete");
         
         settings.playLobbyMusic("assets/game_sounds/Loby music.wav");
           settings.loadpelletSFX("assets/game_sounds/eat_pellet.wav");
