@@ -3,6 +3,7 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+<<<<<<< HEAD
             <file>file:/C:/Users/ACER/Documents/NetBeansProjects/JavaPacmanDSAA-main/src/Block.java</file>
             <file>file:/C:/Users/ACER/Documents/NetBeansProjects/JavaPacmanDSAA-main/src/GameOverPanel.java</file>
             <file>file:/C:/Users/ACER/Documents/NetBeansProjects/JavaPacmanDSAA-main/src/GameComplete.java</file>
@@ -10,6 +11,11 @@
             <file>file:/C:/Users/ACER/Documents/NetBeansProjects/JavaPacmanDSAA-main/src/PacmanGame.java</file>
             <file>file:/C:/Users/ACER/Documents/NetBeansProjects/JavaPacmanDSAA-main/src/App.java</file>
             <file>file:/C:/Users/ACER/Documents/NetBeansProjects/JavaPacmanDSAA-main/src/Score.java</file>
+=======
+            <file>file:/C:/Users/potato/Documents/NetBeansProjects/JavaPacmanDSAA_master/JavaPacmanDSAA/src/Bomb.java</file>
+            <file>file:/C:/Users/potato/Documents/NetBeansProjects/JavaPacmanDSAA_master/JavaPacmanDSAA/src/PacmanGame.java</file>
+            <file>file:/C:/Users/potato/Documents/NetBeansProjects/JavaPacmanDSAA_master/JavaPacmanDSAA/src/PacmanAbilities.java</file>
+>>>>>>> 041802cf9d1f8abffc6d37250d6408551e75173d
         </group>
     </open-files>
 </project-private>

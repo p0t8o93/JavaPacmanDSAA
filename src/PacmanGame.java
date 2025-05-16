@@ -149,7 +149,11 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         "X XX X XXXXX X XX X",
         "X XX X       X XX X",
         "X XX X XXrXX X XX X",
+<<<<<<< HEAD
         "X0     XbpoX     0X",
+=======
+        "0      XbpoX     0X",
+>>>>>>> 041802cf9d1f8abffc6d37250d6408551e75173d
         "X X XX XXXXX XX X X",
         "X X      0      X X",
         "X XX X XXXXX X XX X",
@@ -1547,6 +1551,7 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         isPaused = false;
         repaint();
     }
+<<<<<<< HEAD
     public void gameComplete(){
          if (gameLoop.isRunning()) {
             gameLoop.stop();
@@ -1558,4 +1563,6 @@ public class PacmanGame extends JPanel implements ActionListener, KeyListener, M
         app.cardLayout.show(app.MainPanel, "gameComplete");
         app.settings.playGameOver("assets/game_sounds/gameover.wav");
     }
+=======
+>>>>>>> 041802cf9d1f8abffc6d37250d6408551e75173d
 }
